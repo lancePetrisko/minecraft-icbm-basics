@@ -25,6 +25,10 @@ import net.minecraft.client.input.KeyInput;
  * "Confirm Target" button, and a named-waypoint list ("enemy bases", etc.)
  * that can be saved, loaded back into the coordinate fields, and deleted.
  * The background is drawn with plain fills, so no GUI texture is required.
+ *
+ * <p>The top (custom-drawn) section is compressed vs. the original layout;
+ * the item-slot grid below it keeps vanilla 18px slot spacing since that
+ * can't be shrunk without breaking item-icon alignment.
  */
 public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHandler> {
 	private static final int PANEL_COLOR = 0xFFC6C6C6;
@@ -34,14 +38,17 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 	private static final int LABEL_COLOR = 0xFF404040;
 	private static final int DELETE_COLOR = 0xFFAA0000;
 
-	private static final int NAME_FIELD_Y = 84;
-	private static final int HEADER_Y = 106;
+	private static final int COORD_ROW_Y = 6;
+	private static final int CONFIRM_ROW_Y = 26;
+	private static final int STATUS_TEXT_Y = 48;
+	private static final int NAME_FIELD_Y = 60;
+	private static final int HEADER_Y = 80;
 	private static final int LIST_X = 10;
-	private static final int LIST_Y = 118;
-	private static final int LIST_ROW_HEIGHT = 12;
+	private static final int LIST_Y = 92;
+	private static final int LIST_ROW_HEIGHT = 10;
 	private static final int VISIBLE_ROWS = 5;
 	private static final int DELETE_X = 168;
-	private static final int PLAYER_INV_Y = 184;
+	private static final int PLAYER_INV_Y = MissileLauncherScreenHandler.PLAYER_INV_Y;
 
 	private TextFieldWidget xField;
 	private TextFieldWidget yField;
@@ -63,9 +70,9 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		int left = this.x;
 		int top = this.y;
 
-		this.xField = createCoordField(left + 10, top + 24, "X");
-		this.yField = createCoordField(left + 52, top + 24, "Y");
-		this.zField = createCoordField(left + 94, top + 24, "Z");
+		this.xField = createCoordField(left + 10, top + COORD_ROW_Y, "X");
+		this.yField = createCoordField(left + 52, top + COORD_ROW_Y, "Y");
+		this.zField = createCoordField(left + 94, top + COORD_ROW_Y, "Z");
 
 		if (this.handler.hasInitialTarget()) {
 			this.xField.setText(Integer.toString(this.handler.getInitialTargetX()));
@@ -81,10 +88,10 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		this.addDrawableChild(ButtonWidget.builder(
 						Text.translatable("gui.icbmbasics.confirm_target"),
 						button -> this.confirmTarget())
-				.dimensions(left + 10, top + 48, 120, 20)
+				.dimensions(left + 10, top + CONFIRM_ROW_Y, 120, 18)
 				.build());
 
-		this.nameField = new TextFieldWidget(this.textRenderer, left + 10, top + NAME_FIELD_Y, 100, 18,
+		this.nameField = new TextFieldWidget(this.textRenderer, left + 10, top + NAME_FIELD_Y, 100, 16,
 				Text.translatable("gui.icbmbasics.name_placeholder"));
 		this.nameField.setMaxLength(32);
 		this.nameField.setPlaceholder(Text.translatable("gui.icbmbasics.name_placeholder"));
@@ -93,7 +100,7 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		this.addDrawableChild(ButtonWidget.builder(
 						Text.translatable("gui.icbmbasics.save_waypoint"),
 						button -> this.saveWaypoint())
-				.dimensions(left + 114, top + NAME_FIELD_Y, 76, 20)
+				.dimensions(left + 114, top + NAME_FIELD_Y, 76, 16)
 				.build());
 	}
 
@@ -240,9 +247,7 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 	protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
 		// Custom layout, so we draw our own labels instead of the defaults.
 		context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, LABEL_COLOR, false);
-		context.drawText(this.textRenderer,
-				Text.translatable("gui.icbmbasics.ammo"), 138, 19, LABEL_COLOR, false);
-		context.drawText(this.textRenderer, this.statusText, 10, 72, LABEL_COLOR, false);
+		context.drawText(this.textRenderer, this.statusText, 10, STATUS_TEXT_Y, LABEL_COLOR, false);
 
 		context.drawText(this.textRenderer,
 				Text.translatable("gui.icbmbasics.saved_targets"), LIST_X, HEADER_Y, LABEL_COLOR, false);

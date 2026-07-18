@@ -19,7 +19,8 @@ import net.minecraft.util.math.BlockPos;
 
 public class MissileLauncherScreenHandler extends ScreenHandler {
 	public static final int MISSILE_SLOT_X = 152;
-	public static final int MISSILE_SLOT_Y = 30;
+	public static final int MISSILE_SLOT_Y = 26;
+	public static final int PLAYER_INV_Y = 130;
 
 	private final Inventory inventory;
 	private final BlockPos launcherPos;
@@ -62,7 +63,7 @@ public class MissileLauncherScreenHandler extends ScreenHandler {
 
 		// Player inventory + hotbar. Pushed down to make room for the name
 		// field, save button, and saved-waypoint list above it.
-		this.addPlayerSlots(playerInventory, 8, 184);
+		this.addPlayerSlots(playerInventory, 8, PLAYER_INV_Y);
 	}
 
 	public BlockPos getLauncherPos() {

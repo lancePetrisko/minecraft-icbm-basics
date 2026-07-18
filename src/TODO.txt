@@ -2,8 +2,6 @@ TODO File
 
 I want a feature in the menu where it says launch with a big red button within the launch platform.
 
-Remove storage feature in missile launcher block
-
 Add a usb drive in the game which can store cordinates with names and you can slot it into missile launcher blocks
 to then load them into the missile launcher
 

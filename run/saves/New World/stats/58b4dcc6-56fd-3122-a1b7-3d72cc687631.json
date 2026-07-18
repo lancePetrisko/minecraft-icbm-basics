@@ -1,0 +1,18 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:chest": 1
+    },
+    "minecraft:custom": {
+      "minecraft:open_chest": 1,
+      "minecraft:time_since_rest": 6912,
+      "minecraft:walk_one_cm": 716,
+      "minecraft:total_world_time": 6937,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 6912,
+      "minecraft:jump": 1,
+      "minecraft:time_since_death": 6912
+    }
+  },
+  "DataVersion": 4671
+}
