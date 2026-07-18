@@ -1,0 +1,26 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 3512,
+      "minecraft:walk_one_cm": 1792,
+      "minecraft:total_world_time": 3513,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 11664,
+      "minecraft:crouch_one_cm": 371,
+      "minecraft:sneak_time": 146,
+      "minecraft:play_time": 3512,
+      "minecraft:jump": 16,
+      "minecraft:time_since_death": 3512
+    },
+    "minecraft:picked_up": {
+      "minecraft:leaf_litter": 7,
+      "icbmbasics:icbm_missile": 7
+    },
+    "minecraft:used": {
+      "minecraft:grass_block": 1,
+      "minecraft:lever": 3,
+      "icbmbasics:missile_launcher": 8
+    }
+  },
+  "DataVersion": 4671
+}

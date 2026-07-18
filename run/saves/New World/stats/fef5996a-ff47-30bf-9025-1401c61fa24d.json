@@ -1,0 +1,35 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:grass_block": 38,
+      "minecraft:repeater": 13,
+      "minecraft:lever": 5,
+      "icbmbasics:missile_launcher": 5,
+      "minecraft:oak_button": 1,
+      "minecraft:sponge": 71,
+      "minecraft:oak_sign": 1,
+      "minecraft:redstone": 24,
+      "minecraft:command_block": 1
+    },
+    "minecraft:picked_up": {
+      "minecraft:leaf_litter": 1,
+      "icbmbasics:icbm_missile": 10
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 14182,
+      "minecraft:walk_one_cm": 12108,
+      "minecraft:leave_game": 1,
+      "minecraft:walk_under_water_one_cm": 7789,
+      "minecraft:play_time": 14182,
+      "minecraft:jump": 70,
+      "minecraft:time_since_death": 14182,
+      "minecraft:sprint_one_cm": 758,
+      "minecraft:total_world_time": 15643,
+      "minecraft:fly_one_cm": 165169,
+      "minecraft:walk_on_water_one_cm": 3601,
+      "minecraft:crouch_one_cm": 696,
+      "minecraft:sneak_time": 911
+    }
+  },
+  "DataVersion": 4671
+}

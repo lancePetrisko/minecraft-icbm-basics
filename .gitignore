@@ -7,8 +7,10 @@ build/
 *.iml
 out/
 
-# Minecraft/Fabric run folder
-run/
+# Minecraft/Fabric run folder — ignore everything except the save
+run/*
+!run/saves/
+!run/saves/**
 
 # OS junk
 .DS_Store
