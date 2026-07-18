@@ -1,0 +1,30 @@
+TODO File
+
+I want a feature in the menu where it says launch with a big red button within the launch platform.
+
+Remove storage feature in missile launcher block
+
+Add a usb drive in the game which can store cordinates with names and you can slot it into missile launcher blocks
+to then load them into the missile launcher
+
+
+Advanced Features & Ideas/Roadmap
+Radar
+  - Shows incoming missiles
+  - Can track outgoing missiles across map get notifcations when they hit or if they're intercepted
+  - Can connect to SAM sites/anti-air
+  - Different tiers of Radar, each have a different level of accuracy and showing capabilites
+
+Ground to Air Defense
+  - A SAM site that launches rockets ground to air defense
+  - One of those explosive machine guns that shoots bullets to shoot down missiles
+  - All of these connect to radar but have accuracy levels none of them are 100%
+
+Defensive Blocks
+  - Different tiers of blocks that can take a certain amount of missiles
+  - Need to balance the blocks so that cant be stacked on top of each other. Maybe need like a 5 block gap or something
+  - A armored door with codelock that is also same tiers in-terms of block armor.
+
+Physcial EMP's
+  - Making them physcial that way players have to skillfully use EMP's to disable the enemies defenses for a certain amount of time
+  - They make noise as they're being charged or used outside an enemies base

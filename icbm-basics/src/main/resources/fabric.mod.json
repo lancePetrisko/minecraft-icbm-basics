@@ -1,0 +1,35 @@
+{
+	"schemaVersion": 1,
+	"id": "icbmbasics",
+	"version": "${version}",
+	"name": "ICBM Basics",
+	"description": "Craft missiles, load them into a launcher, dial in target coordinates, and fire with a redstone signal.",
+	"authors": [
+		"You"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/icbmbasics/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.example.icbmbasics.ICBMBasics"
+		],
+		"client": [
+			"com.example.icbmbasics.client.ICBMBasicsClient"
+		]
+	},
+	"mixins": [
+		"icbmbasics.mixins.json",
+		{
+			"config": "icbmbasics.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

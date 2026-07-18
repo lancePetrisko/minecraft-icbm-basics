@@ -1,0 +1,16 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "redstone",
+	"pattern": [
+		"B B",
+		"RRR"
+	],
+	"key": {
+		"B": "minecraft:iron_block",
+		"R": "minecraft:iron_bars"
+	},
+	"result": {
+		"id": "icbmbasics:missile_launcher",
+		"count": 1
+	}
+}

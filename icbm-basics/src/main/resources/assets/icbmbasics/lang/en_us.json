@@ -1,0 +1,9 @@
+{
+	"item.icbmbasics.icbm_missile": "ICBM Missile",
+	"block.icbmbasics.missile_launcher": "Missile Launcher",
+	"entity.icbmbasics.missile": "Missile",
+	"gui.icbmbasics.confirm_target": "Confirm Target",
+	"gui.icbmbasics.ammo": "Ammo",
+	"gui.icbmbasics.target_locked": "Target locked.",
+	"gui.icbmbasics.invalid_coords": "Enter valid X / Y / Z numbers!"
+}

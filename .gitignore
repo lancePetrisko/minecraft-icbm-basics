@@ -1,0 +1,15 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Minecraft/Fabric run folder
+run/
+
+# OS junk
+.DS_Store
+Thumbs.db

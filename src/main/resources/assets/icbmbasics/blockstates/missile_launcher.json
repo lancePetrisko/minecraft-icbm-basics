@@ -1,0 +1,19 @@
+{
+	"variants": {
+		"facing=north": {
+			"model": "icbmbasics:block/missile_launcher"
+		},
+		"facing=south": {
+			"model": "icbmbasics:block/missile_launcher",
+			"y": 180
+		},
+		"facing=west": {
+			"model": "icbmbasics:block/missile_launcher",
+			"y": 270
+		},
+		"facing=east": {
+			"model": "icbmbasics:block/missile_launcher",
+			"y": 90
+		}
+	}
+}
