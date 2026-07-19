@@ -2,6 +2,9 @@ TODO File
 
 I want a feature in the menu where it says launch with a big red button within the launch platform.
 
+I want a feature within the missiles so that whatever direction its going in terms of say its launched up its vertical facing. If its traveling across
+the x axis its laying horizontally and if its going down angle the model in which its going down. Giving it that immersion
+
 DONE: USB drive that stores named coordinates (own item, own GUI via right-click) and can be
 slotted into a missile launcher to browse/load its waypoints there. Launchers also got their
 own per-block waypoint list instead of one global shared list.
@@ -21,6 +24,8 @@ reload). Both are always-on/no-GUI: they scan MissileEntity's active-missile reg
 (the same one radar reads), ignoring missiles still on their own pad the same way radar tells
 outgoing from incoming. Placeholder texture (missile_launcher_side), no tiers yet.
 - Need to include ammo
+- Need to include logic for sams, say if one sam already fired at a specifc id missile that sam is in charge of firing at that specific one and just that
+so it will tell other sams within a similar radius that hey I've got this specific rocket dont waste your rockets on it.
 
 DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
 codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count

@@ -157,6 +157,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		this.updateVelocity();
+		this.updateRotation();
 		this.move(MovementType.SELF, this.getVelocity());
 
 		// Exhaust trail broadcast to all nearby players.
@@ -236,6 +237,21 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		this.setVelocity(dx * speed, vy, dz * speed);
+	}
+
+	/**
+	 * Points the entity along its current velocity so the renderer can orient
+	 * the (otherwise flat) item model with the flight path - straight up
+	 * during boost, laying flat on a horizontal cruise, angled into a dive.
+	 * Rides on vanilla's normal yaw/pitch entity tracking; no extra networking.
+	 */
+	private void updateRotation() {
+		Vec3d v = this.getVelocity();
+		double horizontal = v.horizontalLength();
+		if (horizontal > 1.0E-5 || Math.abs(v.y) > 1.0E-5) {
+			this.setYaw((float) (MathHelper.atan2(v.x, v.z) * MathHelper.DEGREES_PER_RADIAN));
+			this.setPitch((float) (MathHelper.atan2(v.y, horizontal) * MathHelper.DEGREES_PER_RADIAN));
+		}
 	}
 
 	private void explode(ServerWorld world) {

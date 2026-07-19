@@ -16,6 +16,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -82,6 +83,8 @@ public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 
 		if (distance > 0.001) {
 			this.setVelocity(dx / distance * speed, dy / distance * speed, dz / distance * speed);
+			this.setYaw((float) (MathHelper.atan2(dx, dz) * MathHelper.DEGREES_PER_RADIAN));
+			this.setPitch((float) (MathHelper.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * MathHelper.DEGREES_PER_RADIAN));
 		}
 		this.move(MovementType.SELF, this.getVelocity());
 
