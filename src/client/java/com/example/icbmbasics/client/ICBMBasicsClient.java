@@ -26,6 +26,9 @@ public class ICBMBasicsClient implements ClientModInitializer {
 		// Swap this for a custom EntityModel later if you want a fancier missile.
 		EntityRendererRegistry.register(ModEntities.MISSILE,
 				ctx -> new FlyingItemEntityRenderer<>(ctx, 2.5f, true));
+		// SAM interceptors reuse the same missile item, just smaller.
+		EntityRendererRegistry.register(ModEntities.SAM_INTERCEPTOR,
+				ctx -> new FlyingItemEntityRenderer<>(ctx, 1.5f, true));
 
 		HandledScreens.register(ModScreenHandlers.MISSILE_LAUNCHER, MissileLauncherScreen::new);
 		HandledScreens.register(ModScreenHandlers.USB_DRIVE, UsbDriveScreen::new);

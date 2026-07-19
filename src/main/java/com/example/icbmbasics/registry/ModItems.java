@@ -37,6 +37,10 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_door_mk3"));
 	public static final RegistryKey<Item> ARMOR_TOOL_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armor_tool"));
+	public static final RegistryKey<Item> SAM_SITE_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("sam_site"));
+	public static final RegistryKey<Item> CIWS_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("ciws"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -87,6 +91,16 @@ public final class ModItems {
 	public static final Item ARMOR_TOOL = Registry.register(Registries.ITEM, ARMOR_TOOL_KEY,
 			new ArmorToolItem(new Item.Settings().registryKey(ARMOR_TOOL_KEY).maxCount(1)));
 
+	public static final Item SAM_SITE = Registry.register(Registries.ITEM, SAM_SITE_KEY,
+			new BlockItem(ModBlocks.SAM_SITE, new Item.Settings()
+					.registryKey(SAM_SITE_KEY)
+					.useBlockPrefixedTranslationKey()));
+
+	public static final Item CIWS = Registry.register(Registries.ITEM, CIWS_KEY,
+			new BlockItem(ModBlocks.CIWS, new Item.Settings()
+					.registryKey(CIWS_KEY)
+					.useBlockPrefixedTranslationKey()));
+
 	private ModItems() {
 	}
 
@@ -103,6 +117,8 @@ public final class ModItems {
 			entries.add(ARMORED_DOOR_MK2);
 			entries.add(ARMORED_DOOR_MK3);
 			entries.add(ARMOR_TOOL);
+			entries.add(SAM_SITE);
+			entries.add(CIWS);
 		});
 	}
 }

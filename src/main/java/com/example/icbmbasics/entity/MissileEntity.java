@@ -94,6 +94,26 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		return this.age;
 	}
 
+	/**
+	 * Destroys this missile mid-flight on a successful intercept (SAM/CIWS).
+	 * Deliberately not {@link #explode(ServerWorld)}: a shootdown is debris, not
+	 * a ground impact, so it skips the crater/armor-damage/explosion-power logic
+	 * entirely and just discards with a small visual/audio flourish.
+	 */
+	public void destroyByInterceptor(ServerWorld world) {
+		if (this.isRemoved()) {
+			return;
+		}
+		double x = this.getX();
+		double y = this.getY();
+		double z = this.getZ();
+		this.discard();
+
+		world.spawnParticles(ParticleTypes.EXPLOSION, x, y, z, 1, 0.2, 0.2, 0.2, 0.0);
+		world.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 12, 0.4, 0.4, 0.4, 0.05);
+		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 2.0f, 1.4f);
+	}
+
 	public void setTarget(double x, double y, double z) {
 		this.targetX = x;
 		this.targetY = y;

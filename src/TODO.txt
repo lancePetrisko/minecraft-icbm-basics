@@ -15,10 +15,11 @@ Radar
   - Different tiers of Radar, each have a different level of accuracy and showing capabilites
   - Ability to launch a satelite and see all missiles across the whole map
 
-Ground to Air Defense
-  - A SAM site that launches rockets ground to air defense
-  - One of those explosive machine guns that shoots bullets to shoot down missiles
-  - All of these connect to radar but have accuracy levels none of them are 100%
+DONE: Ground to Air Defense - a SAM site block (homing interceptor rocket, ~60% accuracy,
+long range, slow reload) and a CIWS block (hitscan burst, ~40% accuracy, short range, fast
+reload). Both are always-on/no-GUI: they scan MissileEntity's active-missile registry directly
+(the same one radar reads), ignoring missiles still on their own pad the same way radar tells
+outgoing from incoming. Placeholder texture (missile_launcher_side), no tiers yet.
 
 DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
 codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count

@@ -56,6 +56,27 @@ public class ICBMConfig {
 	/** How close (blocks) a missile impact must be to damage an armored block/door. */
 	public int armorDamageRadius = 6;
 
+	/** SAM site detection/engagement radius (blocks). Ignores missiles still on the pad, same rule as radar. */
+	public int samDetectionRadius = 80;
+
+	/** Ticks between SAM interceptor launches (one at a time per site). */
+	public int samFireCooldownTicks = 60;
+
+	/** Chance (0-1) a fired SAM interceptor actually destroys its target on arrival. */
+	public double samAccuracy = 0.6;
+
+	/** Cruise speed of a SAM interceptor in blocks per tick. */
+	public double samInterceptorSpeed = 1.6;
+
+	/** CIWS detection/engagement radius (blocks). Shorter-ranged than a SAM site. */
+	public int ciwsDetectionRadius = 40;
+
+	/** Ticks between CIWS bursts. Much faster than a SAM site's reload. */
+	public int ciwsFireCooldownTicks = 10;
+
+	/** Chance (0-1) a single CIWS burst destroys its target. */
+	public double ciwsAccuracy = 0.4;
+
 	public static ICBMConfig load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
 		ICBMConfig config = new ICBMConfig();
@@ -99,6 +120,15 @@ public class ICBMConfig {
 		for (int i = 0; i < armorTierHits.length; i++) {
 			armorTierHits[i] = Math.max(1, Math.min(armorTierHits[i], 200));
 		}
+
+		samDetectionRadius = Math.max(16, Math.min(samDetectionRadius, 512));
+		samFireCooldownTicks = Math.max(1, Math.min(samFireCooldownTicks, 2000));
+		samAccuracy = Math.max(0.0, Math.min(samAccuracy, 1.0));
+		samInterceptorSpeed = Math.max(0.2, Math.min(samInterceptorSpeed, 4.0));
+
+		ciwsDetectionRadius = Math.max(8, Math.min(ciwsDetectionRadius, 256));
+		ciwsFireCooldownTicks = Math.max(1, Math.min(ciwsFireCooldownTicks, 400));
+		ciwsAccuracy = Math.max(0.0, Math.min(ciwsAccuracy, 1.0));
 	}
 
 	private void save(Path path) {

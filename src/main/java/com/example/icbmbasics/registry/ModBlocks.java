@@ -3,8 +3,10 @@ package com.example.icbmbasics.registry;
 import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.block.ArmoredBlock;
 import com.example.icbmbasics.block.ArmoredDoorBlock;
+import com.example.icbmbasics.block.CiwsBlock;
 import com.example.icbmbasics.block.MissileLauncherBlock;
 import com.example.icbmbasics.block.RadarBlock;
+import com.example.icbmbasics.block.SamSiteBlock;
 
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -34,6 +36,11 @@ public final class ModBlocks {
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("armored_door_mk2"));
 	public static final RegistryKey<Block> ARMORED_DOOR_MK3_KEY =
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("armored_door_mk3"));
+
+	public static final RegistryKey<Block> SAM_SITE_KEY =
+			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("sam_site"));
+	public static final RegistryKey<Block> CIWS_KEY =
+			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("ciws"));
 
 	public static final Block MISSILE_LAUNCHER = Registry.register(Registries.BLOCK, MISSILE_LAUNCHER_KEY,
 			new MissileLauncherBlock(AbstractBlock.Settings.create()
@@ -106,6 +113,30 @@ public final class ModBlocks {
 					.requiresTool()
 					.nonOpaque()
 					.sounds(BlockSoundGroup.METAL), 3));
+
+	/**
+	 * Ground-to-air defense. Auto-fires homing interceptors at missiles within
+	 * range (see {@code SamSiteBlockEntity}); not 100% accurate
+	 * ({@code ICBMConfig.samAccuracy}). No GUI - fire-and-forget.
+	 */
+	public static final Block SAM_SITE = Registry.register(Registries.BLOCK, SAM_SITE_KEY,
+			new SamSiteBlock(AbstractBlock.Settings.create()
+					.registryKey(SAM_SITE_KEY)
+					.strength(4.0f, 20.0f)
+					.requiresTool()
+					.sounds(BlockSoundGroup.METAL)));
+
+	/**
+	 * Close-in weapon system: shorter range and faster reload than the SAM site,
+	 * lower accuracy ({@code ICBMConfig.ciwsAccuracy}), hitscan bursts instead
+	 * of a projectile entity.
+	 */
+	public static final Block CIWS = Registry.register(Registries.BLOCK, CIWS_KEY,
+			new CiwsBlock(AbstractBlock.Settings.create()
+					.registryKey(CIWS_KEY)
+					.strength(4.0f, 20.0f)
+					.requiresTool()
+					.sounds(BlockSoundGroup.METAL)));
 
 	private ModBlocks() {
 	}
