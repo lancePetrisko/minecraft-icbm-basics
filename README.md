@@ -2,8 +2,8 @@
 
 A Fabric mod for **Minecraft 1.21.11** (the latest 1.21.x release). Craft missiles, load them
 into a launcher block, dial in target coordinates in a GUI, and fire with a redstone signal.
-The missile boosts vertically, arcs toward the target, and detonates with a large (configurable)
-explosion, a particle shockwave, and optional terrain destruction.
+Then build up defenses — radar, tiered armored blocks/doors, and automatic ground-to-air
+defense (SAM sites and CIWS) — to track and shoot down incoming missiles before they land.
 
 ## Building
 
@@ -31,7 +31,9 @@ Run the game in dev with `./gradlew runClient`.
 2. Drop the built jar **and** the matching [Fabric API](https://modrinth.com/mod/fabric-api) jar
    into your `.minecraft/mods` folder (client and/or server).
 
-## How to use in game
+All of the mod's items live in their own **ICBM Basics** creative-inventory tab.
+
+## Offense: missiles & launchers
 
 1. **Craft the launcher** — 2 iron blocks in the middle row (left + right, center empty) and
    3 iron bars along the bottom row:
@@ -68,21 +70,83 @@ Run the game in dev with `./gradlew runClient`.
 
 6. **Fire** — give the launcher a redstone signal (flick a lever on it). On the rising edge,
    if a missile is loaded and a target is locked, it launches: vertical boost, cruise, then a
-   terminal dive onto the target, with a smoke/flame trail and engine sound the whole way.
+   terminal dive onto the target, with a smoke/flame trail and engine sound the whole way. The
+   missile model itself banks to match its flight — vertical on boost, flat on cruise, angled
+   into the dive — instead of just billboarding to the camera.
 
 7. **Impact** — a large explosion (default power 10 vs. TNT's 4), an expanding particle
    shockwave ring, and a carved crater.
+
+## Defense: radar, armor, and ground-to-air
+
+### Radar
+
+Craft a Radar block (iron ingots/blocks, glass panes, redstone — see the recipe file) and
+place it anywhere; it's non-directional. Right-click to open its scope GUI: a circular scanline
+display with a rotating sweep, range rings, and blips for every missile within its detection
+radius. Missiles caught very young (still on the pad) are tracked as **outgoing** (cyan) across
+the whole map until they resolve; anything else shows as **incoming** (red) only while actually
+in range. A scrollable log below the scope records where tracked missiles impacted.
+
+### Armored blocks & doors
+
+Three tiers each of armored blocks and matching codelock doors (iron → diamond → netherite
+materials, see the recipe files), absorbing 2 / 5 / 10 missile hits respectively before
+breaking — ordinary explosions and even the missile's own crater-carving can't touch them, only
+a direct missile hit counts. Damage shows as a visible 0-3 stage on the block.
+
+Placement is capped by an **armor zone**: up to 128 armored blocks/doors within 30 blocks of a
+zone's anchor point (doors count too). Placing further away starts a new zone. Craft the **Armor
+Zone Tool** (iron ingots around a compass) and right-click any block to re-anchor the nearest
+zone there — handy if you want to relocate or expand your base's armor budget.
+
+Armored doors add a numeric keypad codelock (right-click to set/enter a code in a small GUI) and
+ignore redstone entirely, so a lever can't bypass the lock.
+
+### SAM sites & CIWS
+
+Two automatic, no-aiming-required defenses — place them and they defend themselves:
+
+- **SAM Site** — long detection range, slow reload, launches a homing interceptor rocket at the
+  nearest qualifying missile. About **60% accurate** per shot.
+- **CIWS** — short range, very fast reload, fires hitscan bursts (tracer particles, no
+  projectile entity) at anything that gets close. About **40% accurate** per burst.
+
+Both ignore missiles that are still on their own launch pad (same rule radar uses to tell your
+own outgoing missile from an incoming one), and multiple SAM sites coordinate automatically —
+once one site fires on a missile, every other SAM site skips that missile until the interceptor
+resolves, so you never waste two rockets on the same target.
+
+**Both need ammo** — SAM sites take `SAM Interceptor Rocket` items, CIWS take `CIWS Ammo Belt`
+items (see the recipe files), one consumed per shot/burst. Right-click either block to open a
+small GUI showing the ammo slot and a live "Ammo: X / Y" count, or just pipe items in with a
+hopper — both are ordinary single-slot inventories under the hood.
+
+None of the ground-to-air blocks have real art yet — they currently reuse the launcher's side
+texture as a placeholder.
 
 ## Config
 
 Generated at `config/icbmbasics.json` on first launch:
 
-| Key                  | Default | Meaning                                                            |
-|----------------------|---------|--------------------------------------------------------------------|
-| `explosionPower`     | `10.0`  | Explosion strength (vanilla TNT is 4.0).                           |
-| `destructionRadius`  | `8`     | Extra crater-carving radius on top of the vanilla explosion; `0` disables the extra crater. |
-| `terrainDestruction` | `true`  | Master switch for block damage. When `false`, impacts hurt entities but never break blocks. |
-| `missileSpeed`       | `1.1`   | Horizontal cruise speed in blocks/tick.                            |
+| Key                       | Default   | Meaning                                                              |
+|---------------------------|-----------|------------------------------------------------------------------------|
+| `explosionPower`          | `10.0`    | Explosion strength (vanilla TNT is 4.0).                             |
+| `destructionRadius`       | `8`       | Extra crater-carving radius on top of the vanilla explosion; `0` disables the extra crater. |
+| `terrainDestruction`      | `true`    | Master switch for block damage. When `false`, impacts hurt entities but never break blocks. |
+| `missileSpeed`            | `1.1`     | Horizontal cruise speed in blocks/tick.                              |
+| `radarTierDetectionRadii` | `[96]`    | Detection radius (blocks) per radar tier, index 0 = tier 1.          |
+| `armorZoneRadius`         | `30`      | How close (blocks) two placements must be to count as the same armor zone. |
+| `armorZoneMaxBlocks`      | `128`     | Max armored blocks/doors allowed in a single zone.                   |
+| `armorTierHits`           | `[2,5,10]`| Missile hits absorbed per armor tier before breaking.                |
+| `armorDamageRadius`       | `6`       | How close a missile impact must be to damage an armored block/door.  |
+| `samDetectionRadius`      | `80`      | SAM site detection/engagement radius (blocks).                       |
+| `samFireCooldownTicks`    | `60`      | Ticks between SAM interceptor launches (one at a time per site).     |
+| `samAccuracy`             | `0.6`     | Chance (0-1) a fired SAM interceptor destroys its target.            |
+| `samInterceptorSpeed`     | `1.6`     | Cruise speed of a SAM interceptor in blocks/tick.                    |
+| `ciwsDetectionRadius`     | `40`      | CIWS detection/engagement radius (blocks).                           |
+| `ciwsFireCooldownTicks`   | `5`       | Ticks between CIWS bursts.                                            |
+| `ciwsAccuracy`            | `0.4`     | Chance (0-1) a single CIWS burst destroys its target.                |
 
 Terrain destruction additionally respects the **`mobGriefing` gamerule** — if it's `false`,
 no blocks are broken regardless of config. All flight, targeting, and explosion logic runs
@@ -94,23 +158,30 @@ server-side only; clients just receive normal entity tracking, so there's nothin
 - `block/MissileLauncherBlock.java` — facing, GUI opening, redstone rising-edge trigger
 - `block/entity/MissileLauncherBlockEntity.java` — inventory (ammo + USB slot), stored target,
   per-launcher waypoint list, launch logic
+- `block/RadarBlock.java` + `block/entity/RadarBlockEntity.java` — scans in-flight missiles,
+  tracks outgoing vs. incoming, pushes contacts/impact log to viewers
+- `block/ArmoredBlock.java` / `ArmoredDoorBlock.java` + their block entities — tiered blast
+  resistance, hit-count damage stages, codelock (doors), gated by `storage/ArmorZoneStorage.java`
+- `block/SamSiteBlock.java` / `CiwsBlock.java` + their block entities — automatic ground-to-air
+  defense, ammo inventories, ammo GUIs
 - `entity/MissileEntity.java` — boost/cruise/dive flight, trail, impact + crater
+- `entity/SamInterceptorEntity.java` — homing interceptor fired by SAM sites
 - `item/UsbDriveItem.java` — right-click opens the drive's own waypoint-editing GUI
-- `screen/MissileLauncherScreenHandler.java` — container (ammo slot, USB slot, player inventory)
-- `screen/UsbDriveScreenHandler.java` — slotless container backing the drive's own GUI
-- `src/client/java/.../MissileLauncherScreen.java` — GUI with X/Y/Z fields, confirm/use-location
-  buttons, and both the launcher's own and the slotted drive's waypoint lists
-- `src/client/java/.../UsbDriveScreen.java` — the drive's own X/Y/Z + name + waypoint list GUI
-- `network/` — GUI-opening data (S2C) and target/waypoint payloads (C2S/S2C)
+- `item/ArmorToolItem.java` — right-click re-anchors the nearest armor zone
+- `screen/` — every GUI's container logic (launcher, USB drive, radar, armored door, SAM/CIWS ammo)
+- `src/client/java/.../` — the matching `HandledScreen`s, plus `MissileEntityRenderer` (orients
+  the flying-item model along its own flight path instead of billboarding to the camera)
+- `network/` — GUI-opening data (S2C) and target/waypoint/code payloads (C2S/S2C)
 - `registry/ModComponents.java` — the `WAYPOINTS` data component storing a drive's list on
   the item stack itself
+- `registry/ModItemGroups.java` — the mod's own creative-inventory tab
+- `storage/ArmorZoneStorage.java` — per-world `PersistentState` tracking armor zone placement budgets
 - `config/ICBMConfig.java` — JSON config at `config/icbmbasics.json`
 
-The missile currently renders as its oversized item sprite (via the vanilla
-`FlyingItemEntityRenderer`) — a deliberate, robust placeholder. Swap in a custom
-`EntityModel` + renderer in `ICBMBasicsClient` if you want a proper 3D missile. Textures are
-simple generated placeholders; replace the PNGs under
-`src/main/resources/assets/icbmbasics/textures/` any time.
+The missile (and SAM interceptor) render as an oversized item sprite via a custom
+`MissileEntityRenderer`, rotated to match flight direction — a deliberate, robust placeholder
+short of a full 3D model. Textures across the mod are simple generated/reused placeholders;
+replace the PNGs under `src/main/resources/assets/icbmbasics/textures/` any time.
 
 ## License
 

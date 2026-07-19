@@ -72,7 +72,7 @@ public class ICBMConfig {
 	public int ciwsDetectionRadius = 40;
 
 	/** Ticks between CIWS bursts. Much faster than a SAM site's reload. */
-	public int ciwsFireCooldownTicks = 10;
+	public int ciwsFireCooldownTicks = 5;
 
 	/** Chance (0-1) a single CIWS burst destroys its target. */
 	public double ciwsAccuracy = 0.4;

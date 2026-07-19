@@ -31,7 +31,8 @@ through a world-wide claimed-target set (SamSiteBlockEntity), so once one site f
 missile every other site skips it until that interceptor resolves (hit, miss, or timeout) -
 no two sites waste a rocket on the same target.
 
-- Make the CIWS shoot like way faster
+DONE: CIWS fires 100% faster - ciwsFireCooldownTicks halved (10 -> 5), so it now fires every
+5 ticks (0.25s) instead of every 10 (0.5s), matching its own SCAN_INTERVAL_TICKS.
 
 
 DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
