@@ -11,9 +11,8 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 
 /**
- * A named target location ("enemy base", etc.) that a player has saved from
- * a missile launcher's GUI. Shared across the whole world via
- * {@link com.example.icbmbasics.storage.WaypointStorage}.
+ * A named target location ("enemy base", etc.). Saved either directly on a
+ * per-launcher block entity or on a USB drive item stack's data component.
  */
 public record Waypoint(String name, int x, int y, int z) {
 	public static final Codec<Waypoint> CODEC = RecordCodecBuilder.create(instance -> instance.group(

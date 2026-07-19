@@ -2,8 +2,8 @@ package com.example.icbmbasics.client.screen;
 
 import java.util.List;
 
-import com.example.icbmbasics.network.DeleteWaypointPayload;
-import com.example.icbmbasics.network.SaveWaypointPayload;
+import com.example.icbmbasics.network.DeleteLauncherWaypointPayload;
+import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
 import com.example.icbmbasics.network.Waypoint;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
@@ -16,19 +16,23 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 import net.minecraft.client.input.KeyInput;
 
 /**
- * Launcher GUI: three coordinate fields, a missile ammo slot, a
- * "Confirm Target" button, and a named-waypoint list ("enemy bases", etc.)
- * that can be saved, loaded back into the coordinate fields, and deleted.
- * The background is drawn with plain fills, so no GUI texture is required.
+ * Launcher GUI: three coordinate fields, a missile ammo slot, a USB drive
+ * slot, a "Confirm Target" button, a "Use my current location" button, a
+ * name field + Save button for the launcher's own named-waypoint list, and
+ * two scrollable waypoint sections - the launcher's own list (editable) and
+ * the slotted USB drive's list (read-only here; edited via the drive's own
+ * GUI). The background is drawn with plain fills, so no GUI texture is
+ * required.
  *
- * <p>The top (custom-drawn) section is compressed vs. the original layout;
- * the item-slot grid below it keeps vanilla 18px slot spacing since that
- * can't be shrunk without breaking item-icon alignment.
+ * <p>The top (custom-drawn) section sizes itself to fit both waypoint
+ * sections; the item-slot grid below it keeps vanilla 18px slot spacing
+ * since that can't be shrunk without breaking item-icon alignment.
  */
 public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHandler> {
 	private static final int PANEL_COLOR = 0xFFC6C6C6;
@@ -37,16 +41,21 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 	private static final int SLOT_COLOR = 0xFF8B8B8B;
 	private static final int LABEL_COLOR = 0xFF404040;
 	private static final int DELETE_COLOR = 0xFFAA0000;
+	private static final int DRIVE_LABEL_COLOR = 0xFF1A5FA8;
 
 	private static final int COORD_ROW_Y = 6;
 	private static final int CONFIRM_ROW_Y = 26;
-	private static final int STATUS_TEXT_Y = 48;
-	private static final int NAME_FIELD_Y = 60;
-	private static final int HEADER_Y = 80;
+	private static final int USE_LOC_ROW_Y = 46;
+	private static final int STATUS_TEXT_Y = 66;
+	private static final int NAME_FIELD_Y = 78;
 	private static final int LIST_X = 10;
-	private static final int LIST_Y = 92;
+	private static final int LAUNCHER_HEADER_Y = 98;
+	private static final int LAUNCHER_LIST_Y = 108;
+	private static final int LAUNCHER_VISIBLE_ROWS = 4;
 	private static final int LIST_ROW_HEIGHT = 10;
-	private static final int VISIBLE_ROWS = 5;
+	private static final int DRIVE_HEADER_Y = LAUNCHER_LIST_Y + LAUNCHER_VISIBLE_ROWS * LIST_ROW_HEIGHT + 2;
+	private static final int DRIVE_LIST_Y = DRIVE_HEADER_Y + 10;
+	private static final int DRIVE_VISIBLE_ROWS = 3;
 	private static final int DELETE_X = 168;
 	private static final int PLAYER_INV_Y = MissileLauncherScreenHandler.PLAYER_INV_Y;
 
@@ -55,7 +64,8 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 	private TextFieldWidget zField;
 	private TextFieldWidget nameField;
 	private Text statusText = Text.empty();
-	private int scrollOffset;
+	private int launcherScrollOffset;
+	private int driveScrollOffset;
 
 	public MissileLauncherScreen(MissileLauncherScreenHandler handler, PlayerInventory inventory, Text title) {
 		super(handler, inventory, title);
@@ -89,6 +99,12 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 						Text.translatable("gui.icbmbasics.confirm_target"),
 						button -> this.confirmTarget())
 				.dimensions(left + 10, top + CONFIRM_ROW_Y, 120, 18)
+				.build());
+
+		this.addDrawableChild(ButtonWidget.builder(
+						Text.translatable("gui.icbmbasics.use_current_location"),
+						button -> this.useCurrentLocation())
+				.dimensions(left + 10, top + USE_LOC_ROW_Y, 120, 18)
 				.build());
 
 		this.nameField = new TextFieldWidget(this.textRenderer, left + 10, top + NAME_FIELD_Y, 100, 16,
@@ -128,6 +144,13 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		this.statusText = Text.translatable("gui.icbmbasics.target_locked");
 	}
 
+	private void useCurrentLocation() {
+		BlockPos pos = this.client.player.getBlockPos();
+		this.xField.setText(Integer.toString(pos.getX()));
+		this.yField.setText(Integer.toString(pos.getY()));
+		this.zField.setText(Integer.toString(pos.getZ()));
+	}
+
 	private void saveWaypoint() {
 		String name = this.nameField.getText().trim();
 		Integer tx = parse(this.xField.getText());
@@ -143,7 +166,7 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 			return;
 		}
 
-		ClientPlayNetworking.send(new SaveWaypointPayload(name, tx, ty, tz));
+		ClientPlayNetworking.send(new SaveLauncherWaypointPayload(this.handler.getLauncherPos(), name, tx, ty, tz));
 		this.statusText = Text.translatable("gui.icbmbasics.waypoint_saved");
 	}
 
@@ -155,7 +178,7 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 	}
 
 	private void deleteWaypoint(Waypoint waypoint) {
-		ClientPlayNetworking.send(new DeleteWaypointPayload(waypoint.name()));
+		ClientPlayNetworking.send(new DeleteLauncherWaypointPayload(this.handler.getLauncherPos(), waypoint.name()));
 	}
 
 	private static Integer parse(String text) {
@@ -166,18 +189,18 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		}
 	}
 
-	/** Returns true and consumes the click if it landed on a waypoint row. */
-	private boolean handleWaypointClick(double mouseX, double mouseY) {
-		List<Waypoint> waypoints = this.handler.getWaypoints();
+	/** Returns true and consumes the click if it landed on a launcher waypoint row. */
+	private boolean handleLauncherListClick(double mouseX, double mouseY) {
+		List<Waypoint> waypoints = this.handler.getLauncherWaypoints();
 		int left = this.x;
 		int top = this.y;
 
-		for (int i = 0; i < VISIBLE_ROWS; i++) {
-			int index = this.scrollOffset + i;
+		for (int i = 0; i < LAUNCHER_VISIBLE_ROWS; i++) {
+			int index = this.launcherScrollOffset + i;
 			if (index >= waypoints.size()) {
 				break;
 			}
-			int rowY = top + LIST_Y + i * LIST_ROW_HEIGHT;
+			int rowY = top + LAUNCHER_LIST_Y + i * LIST_ROW_HEIGHT;
 			if (mouseY >= rowY && mouseY < rowY + LIST_ROW_HEIGHT) {
 				Waypoint waypoint = waypoints.get(index);
 				if (mouseX >= left + DELETE_X && mouseX < left + DELETE_X + 10) {
@@ -191,9 +214,33 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		return false;
 	}
 
+	/** Returns true and consumes the click if it landed on a (read-only) drive waypoint row. */
+	private boolean handleDriveListClick(double mouseX, double mouseY) {
+		List<Waypoint> waypoints = this.handler.getDriveWaypoints();
+		int left = this.x;
+		int top = this.y;
+
+		for (int i = 0; i < DRIVE_VISIBLE_ROWS; i++) {
+			int index = this.driveScrollOffset + i;
+			if (index >= waypoints.size()) {
+				break;
+			}
+			int rowY = top + DRIVE_LIST_Y + i * LIST_ROW_HEIGHT;
+			if (mouseY >= rowY && mouseY < rowY + LIST_ROW_HEIGHT
+					&& mouseX >= left + LIST_X && mouseX < left + DELETE_X) {
+				this.loadWaypoint(waypoints.get(index));
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public boolean mouseClicked(Click click, boolean doubled) {
-		if (this.handleWaypointClick(click.x(), click.y())) {
+		if (this.handleLauncherListClick(click.x(), click.y())) {
+			return true;
+		}
+		if (this.handleDriveListClick(click.x(), click.y())) {
 			return true;
 		}
 		return super.mouseClicked(click, doubled);
@@ -201,11 +248,21 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		int maxScroll = Math.max(0, this.handler.getWaypoints().size() - VISIBLE_ROWS);
-		if (maxScroll > 0) {
-			this.scrollOffset = MathHelper.clamp(
-					this.scrollOffset - (int) Math.signum(verticalAmount), 0, maxScroll);
-			return true;
+		int top = this.y;
+		if (mouseY >= top + DRIVE_HEADER_Y) {
+			int maxScroll = Math.max(0, this.handler.getDriveWaypoints().size() - DRIVE_VISIBLE_ROWS);
+			if (maxScroll > 0) {
+				this.driveScrollOffset = MathHelper.clamp(
+						this.driveScrollOffset - (int) Math.signum(verticalAmount), 0, maxScroll);
+				return true;
+			}
+		} else if (mouseY >= top + LAUNCHER_HEADER_Y) {
+			int maxScroll = Math.max(0, this.handler.getLauncherWaypoints().size() - LAUNCHER_VISIBLE_ROWS);
+			if (maxScroll > 0) {
+				this.launcherScrollOffset = MathHelper.clamp(
+						this.launcherScrollOffset - (int) Math.signum(verticalAmount), 0, maxScroll);
+				return true;
+			}
 		}
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 	}
@@ -223,10 +280,14 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		context.fill(left, top, right, top + 1, PANEL_BORDER_LIGHT);
 		context.fill(left, top, left + 1, bottom, PANEL_BORDER_LIGHT);
 
-		// Missile slot backdrop (slot itself is drawn by the screen handler).
-		int slotX = left + MissileLauncherScreenHandler.MISSILE_SLOT_X - 1;
-		int slotY = top + MissileLauncherScreenHandler.MISSILE_SLOT_Y - 1;
-		context.fill(slotX, slotY, slotX + 18, slotY + 18, SLOT_COLOR);
+		// Missile + USB slot backdrops (slots themselves are drawn by the screen handler).
+		int missileSlotX = left + MissileLauncherScreenHandler.MISSILE_SLOT_X - 1;
+		int missileSlotY = top + MissileLauncherScreenHandler.MISSILE_SLOT_Y - 1;
+		context.fill(missileSlotX, missileSlotY, missileSlotX + 18, missileSlotY + 18, SLOT_COLOR);
+
+		int usbSlotX = left + MissileLauncherScreenHandler.USB_SLOT_X - 1;
+		int usbSlotY = top + MissileLauncherScreenHandler.USB_SLOT_Y - 1;
+		context.fill(usbSlotX, usbSlotY, usbSlotX + 18, usbSlotY + 18, SLOT_COLOR);
 
 		// Player inventory backdrop rows.
 		for (int row = 0; row < 3; row++) {
@@ -250,22 +311,33 @@ public class MissileLauncherScreen extends HandledScreen<MissileLauncherScreenHa
 		context.drawText(this.textRenderer, this.statusText, 10, STATUS_TEXT_Y, LABEL_COLOR, false);
 
 		context.drawText(this.textRenderer,
-				Text.translatable("gui.icbmbasics.saved_targets"), LIST_X, HEADER_Y, LABEL_COLOR, false);
+				Text.translatable("gui.icbmbasics.saved_targets"), LIST_X, LAUNCHER_HEADER_Y, LABEL_COLOR, false);
+		drawWaypointList(context, this.handler.getLauncherWaypoints(), this.launcherScrollOffset,
+				LAUNCHER_LIST_Y, LAUNCHER_VISIBLE_ROWS, true);
 
-		List<Waypoint> waypoints = this.handler.getWaypoints();
+		context.drawText(this.textRenderer,
+				Text.translatable("gui.icbmbasics.drive_waypoints"), LIST_X, DRIVE_HEADER_Y, DRIVE_LABEL_COLOR, false);
+		drawWaypointList(context, this.handler.getDriveWaypoints(), this.driveScrollOffset,
+				DRIVE_LIST_Y, DRIVE_VISIBLE_ROWS, false);
+	}
+
+	private void drawWaypointList(DrawContext context, List<Waypoint> waypoints, int scrollOffset,
+			int listY, int visibleRows, boolean deletable) {
 		if (waypoints.isEmpty()) {
 			context.drawText(this.textRenderer,
-					Text.translatable("gui.icbmbasics.no_waypoints"), LIST_X, LIST_Y, LABEL_COLOR, false);
-		} else {
-			for (int i = 0; i < VISIBLE_ROWS; i++) {
-				int index = this.scrollOffset + i;
-				if (index >= waypoints.size()) {
-					break;
-				}
-				Waypoint waypoint = waypoints.get(index);
-				int rowY = LIST_Y + i * LIST_ROW_HEIGHT;
-				String label = this.textRenderer.trimToWidth(waypoint.name(), DELETE_X - LIST_X - 4);
-				context.drawText(this.textRenderer, Text.literal(label), LIST_X, rowY, LABEL_COLOR, false);
+					Text.translatable("gui.icbmbasics.no_waypoints"), LIST_X, listY, LABEL_COLOR, false);
+			return;
+		}
+		for (int i = 0; i < visibleRows; i++) {
+			int index = scrollOffset + i;
+			if (index >= waypoints.size()) {
+				break;
+			}
+			Waypoint waypoint = waypoints.get(index);
+			int rowY = listY + i * LIST_ROW_HEIGHT;
+			String label = this.textRenderer.trimToWidth(waypoint.name(), DELETE_X - LIST_X - 4);
+			context.drawText(this.textRenderer, Text.literal(label), LIST_X, rowY, LABEL_COLOR, false);
+			if (deletable) {
 				context.drawText(this.textRenderer, Text.literal("x"), DELETE_X, rowY, DELETE_COLOR, false);
 			}
 		}

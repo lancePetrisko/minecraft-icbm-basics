@@ -1,5 +1,6 @@
 {
 	"item.icbmbasics.icbm_missile": "ICBM Missile",
+	"item.icbmbasics.usb_drive": "USB Drive",
 	"block.icbmbasics.missile_launcher": "Missile Launcher",
 	"entity.icbmbasics.missile": "Missile",
 	"gui.icbmbasics.confirm_target": "Confirm Target",
@@ -8,7 +9,9 @@
 	"gui.icbmbasics.invalid_name": "Enter a name to save!",
 	"gui.icbmbasics.waypoint_saved": "Waypoint saved.",
 	"gui.icbmbasics.saved_targets": "Saved Targets:",
+	"gui.icbmbasics.drive_waypoints": "USB Drive:",
 	"gui.icbmbasics.no_waypoints": "No saved targets yet.",
 	"gui.icbmbasics.name_placeholder": "Name",
-	"gui.icbmbasics.save_waypoint": "Save"
+	"gui.icbmbasics.save_waypoint": "Save",
+	"gui.icbmbasics.use_current_location": "Use My Location"
 }

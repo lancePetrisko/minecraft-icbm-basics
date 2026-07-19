@@ -56,12 +56,21 @@ Run the game in dev with `./gradlew runClient`.
 
 4. **Load & target** — right-click the launcher to open its GUI. Put a missile in the
    ammo slot, type the target X / Y / Z into the three fields, and press **Confirm Target**.
+   You can also press **Use My Location** to fill the fields with your current position, and
+   save named waypoints (per-launcher) with the name field + **Save** button.
 
-5. **Fire** — give the launcher a redstone signal (flick a lever on it). On the rising edge,
+5. **USB drives (optional)** — craft a USB drive (iron nuggets around a redstone dust, see
+   the recipe file) and right-click it in hand to open its own GUI: save named coordinates
+   onto the drive itself (manual X/Y/Z or **Use My Location**). Slot the drive into a
+   launcher's second slot to see its waypoints listed alongside the launcher's own — click one
+   to load it into the coordinate fields. The drive's list is portable between launchers; edit
+   it only from the drive's own GUI.
+
+6. **Fire** — give the launcher a redstone signal (flick a lever on it). On the rising edge,
    if a missile is loaded and a target is locked, it launches: vertical boost, cruise, then a
    terminal dive onto the target, with a smoke/flame trail and engine sound the whole way.
 
-6. **Impact** — a large explosion (default power 10 vs. TNT's 4), an expanding particle
+7. **Impact** — a large explosion (default power 10 vs. TNT's 4), an expanding particle
    shockwave ring, and a carved crater.
 
 ## Config
@@ -83,11 +92,18 @@ server-side only; clients just receive normal entity tracking, so there's nothin
 
 - `src/main/java/.../ICBMBasics.java` — mod init, config load, C2S packet handling
 - `block/MissileLauncherBlock.java` — facing, GUI opening, redstone rising-edge trigger
-- `block/entity/MissileLauncherBlockEntity.java` — inventory, stored target, launch logic
+- `block/entity/MissileLauncherBlockEntity.java` — inventory (ammo + USB slot), stored target,
+  per-launcher waypoint list, launch logic
 - `entity/MissileEntity.java` — boost/cruise/dive flight, trail, impact + crater
-- `screen/MissileLauncherScreenHandler.java` — container (ammo slot + player inventory)
-- `src/client/java/.../MissileLauncherScreen.java` — GUI with X/Y/Z fields + confirm button
-- `network/` — GUI-opening data (S2C) and confirm-target payload (C2S)
+- `item/UsbDriveItem.java` — right-click opens the drive's own waypoint-editing GUI
+- `screen/MissileLauncherScreenHandler.java` — container (ammo slot, USB slot, player inventory)
+- `screen/UsbDriveScreenHandler.java` — slotless container backing the drive's own GUI
+- `src/client/java/.../MissileLauncherScreen.java` — GUI with X/Y/Z fields, confirm/use-location
+  buttons, and both the launcher's own and the slotted drive's waypoint lists
+- `src/client/java/.../UsbDriveScreen.java` — the drive's own X/Y/Z + name + waypoint list GUI
+- `network/` — GUI-opening data (S2C) and target/waypoint payloads (C2S/S2C)
+- `registry/ModComponents.java` — the `WAYPOINTS` data component storing a drive's list on
+  the item stack itself
 - `config/ICBMConfig.java` — JSON config at `config/icbmbasics.json`
 
 The missile currently renders as its oversized item sprite (via the vanilla

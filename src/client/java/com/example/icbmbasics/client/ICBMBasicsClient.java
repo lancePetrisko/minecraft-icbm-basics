@@ -1,10 +1,13 @@
 package com.example.icbmbasics.client;
 
 import com.example.icbmbasics.client.screen.MissileLauncherScreen;
-import com.example.icbmbasics.network.WaypointListPayload;
+import com.example.icbmbasics.client.screen.UsbDriveScreen;
+import com.example.icbmbasics.network.DriveWaypointListPayload;
+import com.example.icbmbasics.network.LauncherWaypointListPayload;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModScreenHandlers;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
+import com.example.icbmbasics.screen.UsbDriveScreenHandler;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -21,11 +24,22 @@ public class ICBMBasicsClient implements ClientModInitializer {
 				ctx -> new FlyingItemEntityRenderer<>(ctx, 2.5f, true));
 
 		HandledScreens.register(ModScreenHandlers.MISSILE_LAUNCHER, MissileLauncherScreen::new);
+		HandledScreens.register(ModScreenHandlers.USB_DRIVE, UsbDriveScreen::new);
 
-		// Refreshes the open launcher GUI's waypoint list after a save/delete.
-		ClientPlayNetworking.registerGlobalReceiver(WaypointListPayload.ID, (payload, context) ->
+		// Refreshes the open launcher GUI's own waypoint list after a save/delete.
+		// The slotted drive's list needs no such payload - it rides along on the
+		// USB slot's synced ItemStack.
+		ClientPlayNetworking.registerGlobalReceiver(LauncherWaypointListPayload.ID, (payload, context) ->
 				context.client().execute(() -> {
 					if (context.player().currentScreenHandler instanceof MissileLauncherScreenHandler handler) {
+						handler.setLauncherWaypoints(payload.launcherWaypoints());
+					}
+				}));
+
+		// Refreshes the open USB drive GUI's waypoint list after a save/delete.
+		ClientPlayNetworking.registerGlobalReceiver(DriveWaypointListPayload.ID, (payload, context) ->
+				context.client().execute(() -> {
+					if (context.player().currentScreenHandler instanceof UsbDriveScreenHandler handler) {
 						handler.setWaypoints(payload.waypoints());
 					}
 				}));

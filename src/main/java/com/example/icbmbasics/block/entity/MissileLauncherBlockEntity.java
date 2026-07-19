@@ -8,7 +8,6 @@ import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
-import com.example.icbmbasics.storage.WaypointStorage;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
@@ -34,14 +33,17 @@ import net.minecraft.world.World;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MissileLauncherBlockEntity extends BlockEntity
 		implements Inventory, ExtendedScreenHandlerFactory<LauncherScreenData> {
 
 	public static final int MISSILE_SLOT = 0;
+	public static final int USB_SLOT = 1;
 
-	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
+	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(2, ItemStack.EMPTY);
+	private final List<Waypoint> waypoints = new ArrayList<>();
 
 	private int targetX;
 	private int targetY;
@@ -64,6 +66,25 @@ public class MissileLauncherBlockEntity extends BlockEntity
 
 	public boolean hasTarget() {
 		return this.hasTarget;
+	}
+
+	// --------------------------------------------------------------- waypoints
+
+	public List<Waypoint> getWaypoints() {
+		return List.copyOf(this.waypoints);
+	}
+
+	/** Saves the waypoint, overwriting any existing one with the same name (case-insensitive). */
+	public void saveWaypoint(Waypoint waypoint) {
+		this.waypoints.removeIf(w -> w.name().equalsIgnoreCase(waypoint.name()));
+		this.waypoints.add(waypoint);
+		this.markDirty();
+	}
+
+	public void removeWaypoint(String name) {
+		if (this.waypoints.removeIf(w -> w.name().equalsIgnoreCase(name))) {
+			this.markDirty();
+		}
 	}
 
 	// ------------------------------------------------------------------ launch
@@ -120,7 +141,7 @@ public class MissileLauncherBlockEntity extends BlockEntity
 
 	@Override
 	public boolean isEmpty() {
-		return this.inventory.get(MISSILE_SLOT).isEmpty();
+		return this.inventory.get(MISSILE_SLOT).isEmpty() && this.inventory.get(USB_SLOT).isEmpty();
 	}
 
 	@Override
@@ -150,7 +171,11 @@ public class MissileLauncherBlockEntity extends BlockEntity
 
 	@Override
 	public boolean isValid(int slot, ItemStack stack) {
-		return stack.isOf(ModItems.ICBM_MISSILE);
+		return switch (slot) {
+			case MISSILE_SLOT -> stack.isOf(ModItems.ICBM_MISSILE);
+			case USB_SLOT -> stack.isOf(ModItems.USB_DRIVE);
+			default -> false;
+		};
 	}
 
 	@Override
@@ -178,11 +203,8 @@ public class MissileLauncherBlockEntity extends BlockEntity
 
 	@Override
 	public LauncherScreenData getScreenOpeningData(ServerPlayerEntity player) {
-		World world = this.getWorld();
-		List<Waypoint> waypoints = world instanceof ServerWorld serverWorld
-				? WaypointStorage.get(serverWorld).getAll()
-				: List.of();
-		return new LauncherScreenData(this.getPos(), this.targetX, this.targetY, this.targetZ, this.hasTarget, waypoints);
+		return new LauncherScreenData(this.getPos(), this.targetX, this.targetY, this.targetZ, this.hasTarget,
+				this.getWaypoints());
 	}
 
 	// --------------------------------------------------------------------- nbt
@@ -195,6 +217,7 @@ public class MissileLauncherBlockEntity extends BlockEntity
 		view.putInt("TargetY", this.targetY);
 		view.putInt("TargetZ", this.targetZ);
 		view.putBoolean("HasTarget", this.hasTarget);
+		view.put("Waypoints", Waypoint.CODEC.listOf(), this.waypoints);
 	}
 
 	@Override
@@ -206,5 +229,7 @@ public class MissileLauncherBlockEntity extends BlockEntity
 		this.targetY = view.getInt("TargetY", 0);
 		this.targetZ = view.getInt("TargetZ", 0);
 		this.hasTarget = view.getBoolean("HasTarget", false);
+		this.waypoints.clear();
+		this.waypoints.addAll(view.read("Waypoints", Waypoint.CODEC.listOf()).orElse(List.of()));
 	}
 }

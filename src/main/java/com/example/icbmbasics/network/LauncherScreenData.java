@@ -9,10 +9,11 @@ import net.minecraft.util.math.BlockPos;
 /**
  * Data sent server -> client when the launcher GUI opens, so the screen can
  * pre-fill the coordinate fields with the currently stored target and the
- * list of saved waypoints.
+ * launcher's own waypoint list. The slotted USB drive's list (if any) is not
+ * carried here: it rides along on the USB slot's synced ItemStack instead.
  */
 public record LauncherScreenData(BlockPos pos, int targetX, int targetY, int targetZ, boolean hasTarget,
-		List<Waypoint> waypoints) {
+		List<Waypoint> launcherWaypoints) {
 	public static final PacketCodec<RegistryByteBuf, LauncherScreenData> PACKET_CODEC = PacketCodec.of(
 			(data, buf) -> {
 				buf.writeBlockPos(data.pos());
@@ -20,7 +21,7 @@ public record LauncherScreenData(BlockPos pos, int targetX, int targetY, int tar
 				buf.writeVarInt(data.targetY());
 				buf.writeVarInt(data.targetZ());
 				buf.writeBoolean(data.hasTarget());
-				Waypoint.LIST_PACKET_CODEC.encode(buf, data.waypoints());
+				Waypoint.LIST_PACKET_CODEC.encode(buf, data.launcherWaypoints());
 			},
 			buf -> new LauncherScreenData(
 					buf.readBlockPos(),

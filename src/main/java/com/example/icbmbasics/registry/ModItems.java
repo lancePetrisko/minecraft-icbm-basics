@@ -1,6 +1,7 @@
 package com.example.icbmbasics.registry;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.item.UsbDriveItem;
 
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.BlockItem;
@@ -16,6 +17,8 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("icbm_missile"));
 	public static final RegistryKey<Item> MISSILE_LAUNCHER_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("missile_launcher"));
+	public static final RegistryKey<Item> USB_DRIVE_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("usb_drive"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -29,6 +32,9 @@ public final class ModItems {
 					.registryKey(MISSILE_LAUNCHER_KEY)
 					.useBlockPrefixedTranslationKey()));
 
+	public static final Item USB_DRIVE = Registry.register(Registries.ITEM, USB_DRIVE_KEY,
+			new UsbDriveItem(new Item.Settings().registryKey(USB_DRIVE_KEY).maxCount(1)));
+
 	private ModItems() {
 	}
 
@@ -36,6 +42,7 @@ public final class ModItems {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
 			entries.add(ICBM_MISSILE);
 			entries.add(MISSILE_LAUNCHER);
+			entries.add(USB_DRIVE);
 		});
 	}
 }

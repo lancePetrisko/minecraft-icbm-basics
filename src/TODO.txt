@@ -2,8 +2,9 @@ TODO File
 
 I want a feature in the menu where it says launch with a big red button within the launch platform.
 
-Add a usb drive in the game which can store cordinates with names and you can slot it into missile launcher blocks
-to then load them into the missile launcher
+DONE: USB drive that stores named coordinates (own item, own GUI via right-click) and can be
+slotted into a missile launcher to browse/load its waypoints there. Launchers also got their
+own per-block waypoint list instead of one global shared list.
 
 
 Advanced Features & Ideas/Roadmap

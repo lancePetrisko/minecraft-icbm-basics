@@ -1,0 +1,23 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:lever": 1,
+      "icbmbasics:missile_launcher": 1
+    },
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 154,
+      "minecraft:open_chest": 2,
+      "minecraft:time_since_rest": 5862,
+      "minecraft:walk_one_cm": 4068,
+      "minecraft:total_world_time": 6123,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 233814,
+      "minecraft:crouch_one_cm": 9,
+      "minecraft:sneak_time": 238,
+      "minecraft:play_time": 5862,
+      "minecraft:jump": 17,
+      "minecraft:time_since_death": 5862
+    }
+  },
+  "DataVersion": 4671
+}

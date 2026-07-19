@@ -1,23 +1,30 @@
 package com.example.icbmbasics;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.example.icbmbasics.block.entity.MissileLauncherBlockEntity;
 import com.example.icbmbasics.config.ICBMConfig;
-import com.example.icbmbasics.network.DeleteWaypointPayload;
-import com.example.icbmbasics.network.SaveWaypointPayload;
+import com.example.icbmbasics.network.DeleteDriveWaypointPayload;
+import com.example.icbmbasics.network.DeleteLauncherWaypointPayload;
+import com.example.icbmbasics.network.DriveWaypointListPayload;
+import com.example.icbmbasics.network.LauncherWaypointListPayload;
+import com.example.icbmbasics.network.SaveDriveWaypointPayload;
+import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
 import com.example.icbmbasics.network.Waypoint;
-import com.example.icbmbasics.network.WaypointListPayload;
 import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModBlocks;
+import com.example.icbmbasics.registry.ModComponents;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.registry.ModScreenHandlers;
-import com.example.icbmbasics.storage.WaypointStorage;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -46,6 +53,7 @@ public class ICBMBasics implements ModInitializer {
 		ModBlockEntities.register();
 		ModEntities.register();
 		ModScreenHandlers.register();
+		ModComponents.register();
 
 		// C2S payload: the launcher GUI's "Confirm Target" button.
 		PayloadTypeRegistry.playC2S().register(SetTargetPayload.ID, SetTargetPayload.CODEC);
@@ -66,35 +74,82 @@ public class ICBMBasics implements ModInitializer {
 			}
 		});
 
-		// C2S payloads: saving/deleting named waypoints from the launcher GUI.
-		PayloadTypeRegistry.playC2S().register(SaveWaypointPayload.ID, SaveWaypointPayload.CODEC);
-		PayloadTypeRegistry.playC2S().register(DeleteWaypointPayload.ID, DeleteWaypointPayload.CODEC);
-		// S2C payload: the refreshed waypoint list, sent back after a save/delete.
-		PayloadTypeRegistry.playS2C().register(WaypointListPayload.ID, WaypointListPayload.CODEC);
+		// C2S payloads: saving/deleting named waypoints on a launcher's own list.
+		PayloadTypeRegistry.playC2S().register(SaveLauncherWaypointPayload.ID, SaveLauncherWaypointPayload.CODEC);
+		PayloadTypeRegistry.playC2S().register(DeleteLauncherWaypointPayload.ID, DeleteLauncherWaypointPayload.CODEC);
+		// S2C payload: the refreshed launcher waypoint list, sent back after a save/delete.
+		PayloadTypeRegistry.playS2C().register(LauncherWaypointListPayload.ID, LauncherWaypointListPayload.CODEC);
 
-		ServerPlayNetworking.registerGlobalReceiver(SaveWaypointPayload.ID, (payload, context) -> {
+		ServerPlayNetworking.registerGlobalReceiver(SaveLauncherWaypointPayload.ID, (payload, context) -> {
 			ServerPlayerEntity player = context.player();
 			if (!(player.getEntityWorld() instanceof ServerWorld world)) {
+				return;
+			}
+			if (!player.getBlockPos().isWithinDistance(payload.pos(), 8.0)) {
 				return;
 			}
 			String name = payload.name().trim();
 			if (name.isEmpty() || name.length() > 32) {
 				return;
 			}
+			if (!(world.getBlockEntity(payload.pos()) instanceof MissileLauncherBlockEntity launcher)) {
+				return;
+			}
 			int y = MathHelper.clamp(payload.y(), world.getBottomY(), world.getTopYInclusive());
-			WaypointStorage storage = WaypointStorage.get(world);
-			storage.save(new Waypoint(name, payload.x(), y, payload.z()));
-			ServerPlayNetworking.send(player, new WaypointListPayload(storage.getAll()));
+			launcher.saveWaypoint(new Waypoint(name, payload.x(), y, payload.z()));
+			ServerPlayNetworking.send(player, new LauncherWaypointListPayload(launcher.getWaypoints()));
 		});
 
-		ServerPlayNetworking.registerGlobalReceiver(DeleteWaypointPayload.ID, (payload, context) -> {
+		ServerPlayNetworking.registerGlobalReceiver(DeleteLauncherWaypointPayload.ID, (payload, context) -> {
 			ServerPlayerEntity player = context.player();
 			if (!(player.getEntityWorld() instanceof ServerWorld world)) {
 				return;
 			}
-			WaypointStorage storage = WaypointStorage.get(world);
-			storage.remove(payload.name());
-			ServerPlayNetworking.send(player, new WaypointListPayload(storage.getAll()));
+			if (!player.getBlockPos().isWithinDistance(payload.pos(), 8.0)) {
+				return;
+			}
+			if (!(world.getBlockEntity(payload.pos()) instanceof MissileLauncherBlockEntity launcher)) {
+				return;
+			}
+			launcher.removeWaypoint(payload.name());
+			ServerPlayNetworking.send(player, new LauncherWaypointListPayload(launcher.getWaypoints()));
+		});
+
+		// C2S payloads: saving/deleting named waypoints stored directly on a held USB drive.
+		PayloadTypeRegistry.playC2S().register(SaveDriveWaypointPayload.ID, SaveDriveWaypointPayload.CODEC);
+		PayloadTypeRegistry.playC2S().register(DeleteDriveWaypointPayload.ID, DeleteDriveWaypointPayload.CODEC);
+		// S2C payload: the refreshed drive waypoint list, sent back after a save/delete.
+		PayloadTypeRegistry.playS2C().register(DriveWaypointListPayload.ID, DriveWaypointListPayload.CODEC);
+
+		ServerPlayNetworking.registerGlobalReceiver(SaveDriveWaypointPayload.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			ItemStack stack = player.getStackInHand(payload.hand());
+			if (!stack.isOf(ModItems.USB_DRIVE)) {
+				return;
+			}
+			String name = payload.name().trim();
+			if (name.isEmpty() || name.length() > 32) {
+				return;
+			}
+			ServerWorld world = (ServerWorld) player.getEntityWorld();
+			int y = MathHelper.clamp(payload.y(), world.getBottomY(), world.getTopYInclusive());
+			List<Waypoint> list = new ArrayList<>(stack.getOrDefault(ModComponents.WAYPOINTS, List.of()));
+			list.removeIf(w -> w.name().equalsIgnoreCase(name));
+			list.add(new Waypoint(name, payload.x(), y, payload.z()));
+			stack.set(ModComponents.WAYPOINTS, list);
+			ServerPlayNetworking.send(player, new DriveWaypointListPayload(list));
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(DeleteDriveWaypointPayload.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			ItemStack stack = player.getStackInHand(payload.hand());
+			if (!stack.isOf(ModItems.USB_DRIVE)) {
+				return;
+			}
+			List<Waypoint> list = new ArrayList<>(stack.getOrDefault(ModComponents.WAYPOINTS, List.of()));
+			list.removeIf(w -> w.name().equalsIgnoreCase(payload.name()));
+			stack.set(ModComponents.WAYPOINTS, list);
+			ServerPlayNetworking.send(player, new DriveWaypointListPayload(list));
 		});
 
 		LOGGER.info("ICBM Basics initialized. Explosion power: {}, terrain destruction: {}",
