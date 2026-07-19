@@ -108,14 +108,14 @@ ignore redstone entirely, so a lever can't bypass the lock.
 Two automatic, no-aiming-required defenses — place them and they defend themselves:
 
 - **SAM Site** — long detection range, slow reload, launches a homing interceptor rocket at the
-  nearest qualifying missile. About **60% accurate** per shot.
-- **CIWS** — far longer range than the SAM site (200 blocks by default), fires 50 bursts a
-  second — close to a real Phalanx's ~75 rounds/sec. Each burst spawns one small flying tracer
-  round (a little gray-concrete "bullet") aimed at a computed firing solution: it leads a
-  moving missile based on its current velocity and a tracer-speed estimate, aiming where the
-  missile *will be* rather than where it currently is, the way a real fire-control computer
-  would — the round only resolves its hit once it visually arrives, not the instant it's fired.
-  Trades accuracy for that range — only about **30% accurate** per burst.
+  nearest qualifying missile. About **30% accurate** per shot.
+- **CIWS** — far longer range than the SAM site (500 blocks by default), fires 35 bursts a
+  second by default — in the neighborhood of a real Phalanx's ~75 rounds/sec. Each burst spawns
+  one small flying tracer round (a little gray-concrete "bullet") aimed at a computed firing
+  solution: it leads a moving missile based on its current velocity and a tracer-speed estimate,
+  aiming where the missile *will be* rather than where it currently is, the way a real
+  fire-control computer would — the round only resolves its hit once it visually arrives, not
+  the instant it's fired. Trades accuracy for that range — only about **30% accurate** per burst.
 
 Both ignore missiles that are still on their own launch pad (same rule radar uses to tell your
 own outgoing missile from an incoming one), and multiple SAM sites coordinate automatically —
@@ -154,10 +154,10 @@ Generated at `config/icbmbasics.json` on first launch:
 | `armorDamageRadius`       | `6`       | How close a missile impact must be to damage an armored block/door.  |
 | `samDetectionRadius`      | `80`      | SAM site detection/engagement radius (blocks).                       |
 | `samFireCooldownTicks`    | `60`      | Ticks between SAM interceptor launches (one at a time per site).     |
-| `samAccuracy`             | `0.6`     | Chance (0-1) a fired SAM interceptor destroys its target.            |
+| `samAccuracy`             | `0.3`     | Chance (0-1) a fired SAM interceptor destroys its target.            |
 | `samInterceptorSpeed`     | `1.6`     | Cruise speed of a SAM interceptor in blocks/tick.                    |
-| `ciwsDetectionRadius`     | `200`     | CIWS detection/engagement radius (blocks).                           |
-| `ciwsRoundsPerSecond`     | `50.0`    | CIWS bursts per second (fractional - can exceed the 20/sec a tick-cooldown would cap out at). |
+| `ciwsDetectionRadius`     | `500`     | CIWS detection/engagement radius (blocks).                           |
+| `ciwsRoundsPerSecond`     | `35.0`    | CIWS bursts per second (fractional - can exceed the 20/sec a tick-cooldown would cap out at). |
 | `ciwsAccuracy`            | `0.3`     | Chance (0-1) a single CIWS burst destroys its target.                |
 | `ciwsBulletSpeed`         | `4.0`     | Tracer speed (blocks/tick) used to compute the CIWS's lead on a moving target. |
 

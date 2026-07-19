@@ -1,8 +1,9 @@
 # ICBM Basics — CLAUDE.md
 
 Fabric mod for Minecraft **1.21.11** (Yarn mappings, Loom 1.17). Missiles + a launcher block
-with a GUI for targeting/waypoints, a radar block, and tiered defensive armor (blocks + a
-codelock door). See `README.md` for player-facing docs (crafting, config).
+with a GUI for targeting/waypoints, a radar block, tiered defensive armor (blocks + a codelock
+door), and automatic ground-to-air defense (SAM sites + CIWS) wired to radar via a plain
+connector block. See `README.md` for player-facing docs (crafting, config).
 This file is for me (Claude) — file map + gotchas so I don't have to re-explore each session.
 
 ## Repo layout gotcha
@@ -42,8 +43,9 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   item stack itself** via the `ModComponents.WAYPOINTS` data component, so a drive's list is
   portable between launchers/worlds and independent of any block entity.
 - `entity/MissileEntity.java` — boost → cruise → terminal-dive flight, trail particles,
-  impact/explosion + crater carving. Renders client-side as an oversized item
-  (`FlyingItemEntityRenderer`, see client init) — no custom model yet.
+  impact/explosion + crater carving. Renders client-side as an oversized item, oriented along
+  its own flight path (`render/MissileEntityRenderer`, see client section below) — no custom
+  model yet.
 - `screen/MissileLauncherScreenHandler.java` — `ScreenHandler` with two slots (constants
   `MISSILE_SLOT_X/Y`, `USB_SLOT_X/Y`) + `addPlayerSlots(...)` for the player's inventory/hotbar
   (`PLAYER_INV_Y` constant, shared with the client screen so layout stays in sync — bumped to
@@ -124,6 +126,93 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   unconditionally on removal (safe, per the above) — the door additionally guards on
   `HALF == LOWER` since both halves fire `onStateReplaced` independently and claim only happened
   once, keyed on the lower half.
+- `entity/MissileEntity.destroyByInterceptor(ServerWorld)` — the clean "shot down" path used by
+  both ground-to-air defenses on a successful hit. Deliberately **not** `explode()`: a mid-air
+  intercept is debris, not a ground impact, so it skips crater carving/armor damage/explosion
+  power entirely and just discards with a small particle/sound flourish. `MissileEntity` also
+  gained `updateRotation()` (called each tick after velocity), setting yaw/pitch from the
+  velocity vector so the entity visibly orients along its flight path — see the client
+  `MissileEntityRenderer` note below for why that alone wasn't enough.
+- `block/SamSiteBlock.java` + `block/entity/SamSiteBlockEntity.java` — non-directional like
+  radar, no GUI on the block itself beyond the ammo slot's own screen. Every
+  `SCAN_INTERVAL_TICKS` (10) it picks the nearest missile within `samDetectionRadius` (same
+  "ignore anything younger than `LAUNCH_ACQUIRE_AGE_TICKS`" rule as radar, so it doesn't shoot
+  its own base's outgoing missile off the pad) and fires a homing `SamInterceptorEntity` at it,
+  rolling `samAccuracy` on arrival. **Sites coordinate through `SamSiteBlockEntity.CLAIMED_TARGETS`**,
+  a world-wide (not radius-scoped) `Map<ServerWorld, Set<UUID>>` of missile UUIDs already
+  claimed by an in-flight interceptor — claimed the instant a site fires, released by
+  `SamInterceptorEntity.remove(RemovalReason)` (same "single override beats releasing at every
+  `discard()` call site" reasoning as `MissileEntity`'s own active-registry cleanup) whenever
+  that interceptor resolves, however it resolves (hit, miss, lost target, timeout). No two sites
+  will ever fire on the same missile at once. Implements `Inventory` (single `SAM_AMMO` slot,
+  `AMMO_SLOT = 0`) + `ExtendedScreenHandlerFactory<AmmoScreenData>` — see the ammo-GUI note below.
+  Only fires while `WireNetwork.isConnectedToRadar` finds a path to a radar; ammo-empty and
+  disconnected are both silent no-ops, not errors.
+- `entity/SamInterceptorEntity.java` — homes on its target by **UUID**, re-resolved fresh every
+  tick via `MissileEntity.getActiveMissiles(world)` rather than held as a direct reference, so a
+  target that resolves mid-flight (already intercepted, already impacted) is handled cleanly —
+  the interceptor just can't find it anymore and discards. Recomputes velocity toward the
+  target's *current* position each tick (a homing missile, unlike the CIWS's ballistic rounds
+  below), rolls `samAccuracy` once within `HIT_DISTANCE_SQ` of the target.
+- `block/CiwsBlock.java` + `block/entity/CiwsBlockEntity.java` — same non-directional/wired-to-
+  radar/ammo-GUI shape as the SAM site, but tuned as a long-range, low-accuracy, very-fast-firing
+  point-defense gun rather than a homing missile. **Fire rate is a fractional accumulator, not a
+  tick cooldown**: `CiwsBlockEntity.fireAccumulator` (a `double`, persisted as `FireAccumulator`)
+  gains `ciwsRoundsPerSecond / 20.0` every tick and fires one burst per whole unit accumulated,
+  capped at `MAX_BURSTS_PER_TICK` (20) as a safety net — a plain per-tick integer cooldown can't
+  express more than 20 bursts/sec, and this needs to go well past that toward a real Phalanx's
+  ~75/sec. **Lesson learned the hard way**: an earlier version paired the cooldown with an outer
+  `world.getTime() % SCAN_INTERVAL_TICKS != 0` gate for "only scan every 5 ticks" perf reasons;
+  since the cooldown could finish well before the next 5-tick-aligned check, it silently capped
+  the *real* fire rate below whatever the cooldown said, for weeks, before anyone noticed ammo
+  wasn't draining as fast as expected. There is no such outer gate anymore — the tick handler
+  runs every tick and the accumulator alone governs rate. Don't reintroduce one without doing the
+  arithmetic to make sure it can't out-throttle the configured rate.
+  Each burst computes a **firing solution** (`computeLeadPoint`): a single-pass linear lead using
+  the target's current position/velocity and `ciwsBulletSpeed` to estimate where it'll be by the
+  time a tracer gets there, then spawns one `CiwsBulletEntity` aimed at that point (not the
+  target's current position) — `BULLETS_PER_BURST` is `1` (was `3`; dropped per request once the
+  higher fire rate alone read as a stream). The accuracy roll (`ciwsAccuracy`) happens once per
+  burst *before* the bullet spawns; only a `lethal`-flagged bullet can actually resolve a hit,
+  and only once it "arrives" (see below), not instantly at the muzzle.
+- `entity/CiwsBulletEntity.java` — purely cosmetic, ballistic (no gravity, no per-tick homing,
+  straight line from spawn velocity) tracer round rendered as a small flying gray-concrete
+  "bullet" (`Items.GRAY_CONCRETE` via `getStack()`, same `MissileEntityRenderer` reuse as the
+  missile/SAM interceptor — no new texture needed). Doesn't decide hit/miss itself: told at
+  `configure()` time whether it's the `lethal` round and how many `travelTicks` until arrival
+  (`distance / ciwsBulletSpeed`, matching the lead calculation's own time-of-flight estimate so
+  the round visually reaches the lead point right as it resolves). On arrival it looks its target
+  back up by UUID (same pattern as `SamInterceptorEntity`) and calls `destroyByInterceptor` only
+  if `lethal` and the target still exists; either way it discards. Non-lethal rounds in a burst
+  (currently none, since `BULLETS_PER_BURST = 1`, but the mechanism still applies if that's ever
+  raised again) get a small random `SPREAD` added to their velocity so a burst doesn't look
+  laser-straight.
+- `block/WireNetwork.java` — the connectivity gate SAM sites/CIWS need: `isConnectedToRadar`
+  does a breadth-first search over orthogonal neighbors starting at the defense block's own
+  position, capped at `MAX_NODES` (4096) as a safety net, traversing through `ModBlocks.WIRE`
+  blocks (a plain `Block`, no entity, no subclass — distinguished by reference equality
+  `block == ModBlocks.WIRE`, not `instanceof`, since there's only one wire block and no tiers to
+  future-proof for) and succeeding the moment it finds a `RadarBlock` neighbor (direct adjacency
+  counts too, no wire needed for that case). Called once per fire *attempt* inside
+  `SamSiteBlockEntity`/`CiwsBlockEntity.tick` (i.e. rate-limited by the same cooldown/accumulator
+  that gates firing, not run unconditionally every tick) — an unconnected site just sits idle
+  regardless of ammo.
+- `screen/SamAmmoScreenHandler.java` / `CiwsAmmoScreenHandler.java` — near-identical single-slot
+  (ammo item only, restricted via `Slot.canInsert`) + player-inventory `ScreenHandler`s, same
+  client/server dual-constructor shape as `MissileLauncherScreenHandler` (client side builds a
+  throwaway `SimpleInventory` from `AmmoScreenData`, server side wraps the real block entity).
+  Deliberately **not** unified into one shared base class — this codebase's established
+  convention (see the SAM/CIWS/radar scan-loop duplication) is some duplication over a premature
+  shared abstraction across block types, even when the shape is this close.
+- `network/AmmoScreenData.java` — minimal S2C screen-opening payload for both ammo GUIs: just the
+  block's `BlockPos`. No count/capacity fields needed — the ammo slot's `ItemStack` (with its
+  count) rides on the normal vanilla slot-sync protocol, same reasoning as the launcher's ammo
+  slot not needing one either.
+- `registry/ModItemGroups.java` — the mod's own creative-inventory tab (`FabricItemGroup`,
+  icon = the ICBM missile), registered **before** `ModItems.register()` in
+  `ICBMBasics.onInitialize()` since `ModItems.register()` is what calls
+  `ItemGroupEvents.modifyEntriesEvent(ModItemGroups.MAIN_KEY)` to populate it. Every item the mod
+  registers lives here now, not scattered across vanilla tabs like `ItemGroups.COMBAT`.
 - `registry/Mod*.java` — `ModItems`, `ModBlocks`, `ModBlockEntities`, `ModEntities`,
   `ModScreenHandlers`, `ModComponents`: plain registration holders, each with a `register()`
   called from `ICBMBasics.onInitialize()`. `ModComponents.WAYPOINTS` is a
@@ -163,20 +252,42 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
 - `config/ICBMConfig.java` — JSON config at `config/icbmbasics.json`
   (`explosionPower`, `destructionRadius`, `terrainDestruction`, `missileSpeed`,
   `radarTierDetectionRadii[]`, `armorZoneRadius`, `armorZoneMaxBlocks`, `armorTierHits[]`,
-  `armorDamageRadius`). Loaded once into the static `ICBMBasics.CONFIG`. Per-tier values are
+  `armorDamageRadius`, `samDetectionRadius`, `samFireCooldownTicks`, `samAccuracy`,
+  `samInterceptorSpeed`, `ciwsDetectionRadius`, `ciwsRoundsPerSecond`, `ciwsAccuracy`,
+  `ciwsBulletSpeed`). Loaded once into the static `ICBMBasics.CONFIG`. Per-tier values are
   plain arrays indexed by `tier - 1`, clamped in `sanitize()` — adding a tier means appending an
-  array entry, not adding a new config field.
+  array entry, not adding a new config field. **Every clamp in `sanitize()` is a hard ceiling on
+  what a player-edited `config/icbmbasics.json` value actually does** — raising a default in this
+  file without also raising its `sanitize()` clamp silently gets overridden back down on load
+  (this bit the user once with `ciwsDetectionRadius`: they set it well above the then-current
+  256 clamp and it just got clamped back to 256 with no error). When bumping a config default or
+  telling the user to hand-edit the JSON for a bigger value, check the matching clamp line too.
 
 There is **no more world-wide/shared waypoint list** — the old `storage/WaypointStorage.java`
 (a `PersistentState` bound to the overworld) was deleted. Every launcher now keeps its own
 list, and USB drives carry theirs on the item.
 
 Client-only (`src/client/java/com/example/icbmbasics/client/`):
-- `ICBMBasicsClient.java` — `ClientModInitializer`. Registers the missile entity renderer, all
-  four `HandledScreens` factories (launcher, USB drive, radar, armored door), and the S2C
-  refresh receivers: `LauncherWaypointListPayload`/`DriveWaypointListPayload` (waypoint lists),
-  `RadarUpdatePayload` (radar contacts/log, matched to the open screen by `BlockPos` since a
-  player could conceivably have closed one radar and opened another between pushes).
+- `ICBMBasicsClient.java` — `ClientModInitializer`. Registers all three `FlyingItemEntity`
+  renderers (missile, SAM interceptor, CIWS bullet — see `render/MissileEntityRenderer` below),
+  all six `HandledScreens` factories (launcher, USB drive, radar, armored door, SAM ammo, CIWS
+  ammo), and the S2C refresh receivers: `LauncherWaypointListPayload`/`DriveWaypointListPayload`
+  (waypoint lists), `RadarUpdatePayload` (radar contacts/log, matched to the open screen by
+  `BlockPos` since a player could conceivably have closed one radar and opened another between
+  pushes). The two ammo GUIs need no such receiver — their slot syncs the normal vanilla way.
+- `render/MissileRenderState.java` + `render/MissileEntityRenderer.java` — a **from-scratch**
+  replacement for vanilla's `FlyingItemEntityRenderer`, not a subclass/wrapper of it. Decompiling
+  `FlyingItemEntityRenderer.render()` (bytecode via `javap`, same technique as the "javap gotcha"
+  below) showed it always does `matrixStack.multiply(camera.orientation)` — a hard camera
+  billboard, with no yaw/pitch anywhere on its render state (`FlyingItemEntityRenderState` only
+  carries the `ItemRenderState`). So there's no way to opt out of billboarding from outside that
+  class; `MissileEntityRenderer` reimplements the same item-rendering path (same
+  `ItemModelManager.updateForNonLivingEntity(..., ItemDisplayContext.GROUND, ...)` call) but
+  rotates the matrix stack from the entity's own lerped yaw/pitch (`MissileRenderState.yaw/pitch`,
+  populated in `updateRenderState` from `entity.getYaw(tickDelta)`/`getPitch(tickDelta)`) instead.
+  Used for `MissileEntity`, `SamInterceptorEntity`, and `CiwsBulletEntity` alike — any
+  `FlyingItemEntity` that sets its own yaw/pitch (see `MissileEntity.updateRotation()`) gets a
+  renderer that actually respects it, just with a different `scale` per entity type.
 - `screen/RadarScreen.java` — `HandledScreen<RadarScreenHandler>`, no slots. Custom-drawn circular
   scope: a scanline-filled dark circle, a rotating sweep line driven by wall-clock time
   (`System.currentTimeMillis() % SWEEP_PERIOD_MS`, purely decorative/client-side — doesn't need
@@ -223,7 +334,10 @@ Resources (`src/main/resources/`):
   doesn't crash — Minecraft treats it as "any value," which is how the door blockstates get away
   with not mentioning `armor_damage` at all despite the property existing on the block.
 - `data/icbmbasics/recipe/` — crafting recipes for the launcher, the missile, the radar, all six
-  armor tiers (block + door × 3, escalating iron → diamond → netherite), and the armor tool.
+  armor tiers (block + door × 3, escalating iron → diamond → netherite), the armor tool, the SAM
+  site + CIWS blocks, their ammo items (`sam_ammo`, `ciws_ammo`), and the wire block. SAM/CIWS/
+  wire all reuse `missile_launcher_side` as a placeholder texture (same deal as radar/armor); the
+  two ammo items reuse the `icbm_missile` item texture rather than getting their own.
 
 Root: `TODO.txt` in `src/` (not resources) is the user's running feature wishlist/roadmap —
 check it for context on what's next or already decided against.
@@ -276,11 +390,22 @@ Requires Java 21+. Windows: use `.\gradlew.bat` from PowerShell.
   intentional. A per-base placement budget is inherently shared/global by design, not a
   per-item/per-block concern like waypoints were — don't read the waypoint decision as "never use
   `PersistentState` again."
-- **Radar only scans while its GUI is open.** `RadarBlockEntity.tick` bails immediately if
-  `viewers` is empty — no server work happens for a radar nobody is looking at. If you add
-  behavior that should happen regardless of whether the GUI is open (e.g. a future SAM site
-  reacting to radar contacts), don't gate it behind `viewers`; that check exists purely as a perf
-  optimization for the GUI's own live-update push, not a general "is the radar active" signal.
+- **Radar only scans/pushes updates while its GUI is open** (`RadarBlockEntity.tick` bails if
+  `viewers` is empty) — but this is purely a perf optimization for the GUI's own live-update
+  push, not a general "is the radar active" signal. **SAM sites/CIWS do *not* depend on a radar's
+  GUI being open or its `viewers` set at all** — they only need `WireNetwork.isConnectedToRadar`
+  to find *a* `RadarBlock` in the network graph (block presence, not block-entity state), and
+  they read missile positions straight from `MissileEntity.getActiveMissiles(world)` the same way
+  radar itself does. A radar with nobody watching its scope still "counts" for wiring purposes.
+- **SAM/CIWS fire-rate math is fragile to get right — reason about actual ticks-per-shot, not
+  just the config field name.** Two real bugs shipped from getting this wrong: (1) an outer
+  `SCAN_INTERVAL_TICKS` gate that silently capped the real rate below what the cooldown config
+  said (see the CIWS section above), and (2) a plain integer tick-cooldown can't express more
+  than 20 fires/sec no matter how low you set it, since a tick is the smallest unit — getting
+  meaningfully faster than that requires a fractional accumulator (`CiwsBlockEntity.fireAccumulator`),
+  not a smaller cooldown number. Before changing either SAM's or CIWS's fire timing, work out the
+  actual ticks/bursts-per-second by hand rather than assuming a config value change alone did
+  what it says.
 - **Missile-hit armor logic lives in `MissileEntity.explode()`, not in the blocks.** Both
   `ArmoredBlockEntity` and `ArmoredDoorBlockEntity` implement `block/entity/ArmoredEntity` purely
   so `explode()` can scan a radius and call `applyMissileHit()` without knowing which concrete
