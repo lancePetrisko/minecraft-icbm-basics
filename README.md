@@ -109,8 +109,13 @@ Two automatic, no-aiming-required defenses — place them and they defend themse
 
 - **SAM Site** — long detection range, slow reload, launches a homing interceptor rocket at the
   nearest qualifying missile. About **60% accurate** per shot.
-- **CIWS** — short range, very fast reload, fires hitscan bursts (tracer particles, no
-  projectile entity) at anything that gets close. About **40% accurate** per burst.
+- **CIWS** — far longer range than the SAM site (200 blocks by default), fires 50 bursts a
+  second — close to a real Phalanx's ~75 rounds/sec. Each burst spawns one small flying tracer
+  round (a little gray-concrete "bullet") aimed at a computed firing solution: it leads a
+  moving missile based on its current velocity and a tracer-speed estimate, aiming where the
+  missile *will be* rather than where it currently is, the way a real fire-control computer
+  would — the round only resolves its hit once it visually arrives, not the instant it's fired.
+  Trades accuracy for that range — only about **30% accurate** per burst.
 
 Both ignore missiles that are still on their own launch pad (same rule radar uses to tell your
 own outgoing missile from an incoming one), and multiple SAM sites coordinate automatically —
@@ -122,8 +127,15 @@ items (see the recipe files), one consumed per shot/burst. Right-click either bl
 small GUI showing the ammo slot and a live "Ammo: X / Y" count, or just pipe items in with a
 hopper — both are ordinary single-slot inventories under the hood.
 
-None of the ground-to-air blocks have real art yet — they currently reuse the launcher's side
-texture as a placeholder.
+**Both also need to be wired to a Radar.** A SAM site or CIWS with ammo but no path to a radar
+just sits idle. Craft **Signal Wire** (copper ingots around a redstone dust, see the recipe
+file) and run a chain of it from the SAM/CIWS to any radar block — placing the defense block
+directly next to a radar works too, no wire needed for that. The connection is checked as a
+simple block-adjacency network (not redstone-style signal strength), so the wire run can be any
+length.
+
+None of the ground-to-air blocks (or the wire) have real art yet — they currently reuse the
+launcher's side texture as a placeholder.
 
 ## Config
 
@@ -144,9 +156,10 @@ Generated at `config/icbmbasics.json` on first launch:
 | `samFireCooldownTicks`    | `60`      | Ticks between SAM interceptor launches (one at a time per site).     |
 | `samAccuracy`             | `0.6`     | Chance (0-1) a fired SAM interceptor destroys its target.            |
 | `samInterceptorSpeed`     | `1.6`     | Cruise speed of a SAM interceptor in blocks/tick.                    |
-| `ciwsDetectionRadius`     | `40`      | CIWS detection/engagement radius (blocks).                           |
-| `ciwsFireCooldownTicks`   | `5`       | Ticks between CIWS bursts.                                            |
-| `ciwsAccuracy`            | `0.4`     | Chance (0-1) a single CIWS burst destroys its target.                |
+| `ciwsDetectionRadius`     | `200`     | CIWS detection/engagement radius (blocks).                           |
+| `ciwsRoundsPerSecond`     | `50.0`    | CIWS bursts per second (fractional - can exceed the 20/sec a tick-cooldown would cap out at). |
+| `ciwsAccuracy`            | `0.3`     | Chance (0-1) a single CIWS burst destroys its target.                |
+| `ciwsBulletSpeed`         | `4.0`     | Tracer speed (blocks/tick) used to compute the CIWS's lead on a moving target. |
 
 Terrain destruction additionally respects the **`mobGriefing` gamerule** — if it's `false`,
 no blocks are broken regardless of config. All flight, targeting, and explosion logic runs
@@ -163,9 +176,12 @@ server-side only; clients just receive normal entity tracking, so there's nothin
 - `block/ArmoredBlock.java` / `ArmoredDoorBlock.java` + their block entities — tiered blast
   resistance, hit-count damage stages, codelock (doors), gated by `storage/ArmorZoneStorage.java`
 - `block/SamSiteBlock.java` / `CiwsBlock.java` + their block entities — automatic ground-to-air
-  defense, ammo inventories, ammo GUIs
+  defense, ammo inventories, ammo GUIs, gated on `block/WireNetwork.java` finding a radar
+- `block/WireNetwork.java` — capped BFS over `WIRE` blocks, the connectivity check SAM/CIWS need
 - `entity/MissileEntity.java` — boost/cruise/dive flight, trail, impact + crater
 - `entity/SamInterceptorEntity.java` — homing interceptor fired by SAM sites
+- `entity/CiwsBulletEntity.java` — cosmetic tracer round fired by a CIWS burst; straight
+  ballistic flight, resolves the hit on arrival rather than instantly at the muzzle
 - `item/UsbDriveItem.java` — right-click opens the drive's own waypoint-editing GUI
 - `item/ArmorToolItem.java` — right-click re-anchors the nearest armor zone
 - `screen/` — every GUI's container logic (launcher, USB drive, radar, armored door, SAM/CIWS ammo)

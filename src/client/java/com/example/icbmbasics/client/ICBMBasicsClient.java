@@ -32,6 +32,10 @@ public class ICBMBasicsClient implements ClientModInitializer {
 		// SAM interceptors reuse the same missile item, just smaller.
 		EntityRendererRegistry.register(ModEntities.SAM_INTERCEPTOR,
 				ctx -> new MissileEntityRenderer<>(ctx, 1.5f));
+		// CIWS tracer rounds render as a small flying gray-concrete "bullet",
+		// same renderer, just a plain block item instead of the missile item.
+		EntityRendererRegistry.register(ModEntities.CIWS_BULLET,
+				ctx -> new MissileEntityRenderer<>(ctx, 0.3f));
 
 		HandledScreens.register(ModScreenHandlers.MISSILE_LAUNCHER, MissileLauncherScreen::new);
 		HandledScreens.register(ModScreenHandlers.USB_DRIVE, UsbDriveScreen::new);

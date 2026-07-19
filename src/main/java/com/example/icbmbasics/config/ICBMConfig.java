@@ -63,19 +63,27 @@ public class ICBMConfig {
 	public int samFireCooldownTicks = 60;
 
 	/** Chance (0-1) a fired SAM interceptor actually destroys its target on arrival. */
-	public double samAccuracy = 0.6;
+	public double samAccuracy = 0.3;
 
 	/** Cruise speed of a SAM interceptor in blocks per tick. */
 	public double samInterceptorSpeed = 1.6;
 
-	/** CIWS detection/engagement radius (blocks). Shorter-ranged than a SAM site. */
-	public int ciwsDetectionRadius = 40;
+	/** CIWS detection/engagement radius (blocks). Longer than a SAM site now - trades range for accuracy. */
+	public int ciwsDetectionRadius = 500;
 
-	/** Ticks between CIWS bursts. Much faster than a SAM site's reload. */
-	public int ciwsFireCooldownTicks = 5;
+	/**
+	 * CIWS bursts per second. A tick-based cooldown tops out at 20/sec (one per
+	 * tick), so this is a fractional accumulator instead (see
+	 * {@code CiwsBlockEntity.fireAccumulator}) - lets it go well past that,
+	 * closer to a real Phalanx's ~75/sec.
+	 */
+	public double ciwsRoundsPerSecond = 35.0;
 
-	/** Chance (0-1) a single CIWS burst destroys its target. */
-	public double ciwsAccuracy = 0.4;
+	/** Chance (0-1) a single CIWS burst destroys its target. Lower than before to offset the range increase. */
+	public double ciwsAccuracy = 0.3;
+
+	/** Tracer speed (blocks/tick) used to compute the CIWS's lead - how far ahead of a moving target it aims. */
+	public double ciwsBulletSpeed = 4.0;
 
 	public static ICBMConfig load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
@@ -126,9 +134,10 @@ public class ICBMConfig {
 		samAccuracy = Math.max(0.0, Math.min(samAccuracy, 1.0));
 		samInterceptorSpeed = Math.max(0.2, Math.min(samInterceptorSpeed, 4.0));
 
-		ciwsDetectionRadius = Math.max(8, Math.min(ciwsDetectionRadius, 256));
-		ciwsFireCooldownTicks = Math.max(1, Math.min(ciwsFireCooldownTicks, 400));
+		ciwsDetectionRadius = Math.max(8, Math.min(ciwsDetectionRadius, 500));
+		ciwsRoundsPerSecond = Math.max(0.5, Math.min(ciwsRoundsPerSecond, 200.0));
 		ciwsAccuracy = Math.max(0.0, Math.min(ciwsAccuracy, 1.0));
+		ciwsBulletSpeed = Math.max(0.5, Math.min(ciwsBulletSpeed, 20.0));
 	}
 
 	private void save(Path path) {

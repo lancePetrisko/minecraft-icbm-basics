@@ -41,6 +41,8 @@ public final class ModBlocks {
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("sam_site"));
 	public static final RegistryKey<Block> CIWS_KEY =
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("ciws"));
+	public static final RegistryKey<Block> WIRE_KEY =
+			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("wire"));
 
 	public static final Block MISSILE_LAUNCHER = Registry.register(Registries.BLOCK, MISSILE_LAUNCHER_KEY,
 			new MissileLauncherBlock(AbstractBlock.Settings.create()
@@ -136,6 +138,17 @@ public final class ModBlocks {
 					.registryKey(CIWS_KEY)
 					.strength(4.0f, 20.0f)
 					.requiresTool()
+					.sounds(BlockSoundGroup.METAL)));
+
+	/**
+	 * A plain connector block - no entity, no special behavior beyond being a
+	 * distinct block type {@code WireNetwork}'s BFS recognizes. SAM sites/CIWS
+	 * only fire while a chain of these (or direct adjacency) reaches a radar.
+	 */
+	public static final Block WIRE = Registry.register(Registries.BLOCK, WIRE_KEY,
+			new Block(AbstractBlock.Settings.create()
+					.registryKey(WIRE_KEY)
+					.strength(1.0f, 6.0f)
 					.sounds(BlockSoundGroup.METAL)));
 
 	private ModBlocks() {

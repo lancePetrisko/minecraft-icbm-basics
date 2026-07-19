@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "redstone",
+	"pattern": [
+		"C C",
+		"CRC",
+		"C C"
+	],
+	"key": {
+		"C": "minecraft:copper_ingot",
+		"R": "minecraft:redstone"
+	},
+	"result": {
+		"id": "icbmbasics:wire",
+		"count": 8
+	}
+}

@@ -1,6 +1,7 @@
 package com.example.icbmbasics.block.entity;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.block.WireNetwork;
 import com.example.icbmbasics.entity.MissileEntity;
 import com.example.icbmbasics.entity.SamInterceptorEntity;
 import com.example.icbmbasics.network.AmmoScreenData;
@@ -55,6 +56,10 @@ import java.util.WeakHashMap;
  * <p>Single-slot {@link Inventory} for {@code ICBM_BASICS.SAM_AMMO} - hopper
  * fed, or right-click opens a small GUI (just the slot + player inventory) to
  * see/refill the count.
+ *
+ * <p>Only fires while {@link WireNetwork#isConnectedToRadar} finds a path to a
+ * radar - direct adjacency or a chain of {@code WIRE} blocks. Unconnected
+ * sites just sit idle regardless of ammo/cooldown.
  */
 public class SamSiteBlockEntity extends BlockEntity
 		implements Inventory, ExtendedScreenHandlerFactory<AmmoScreenData> {
@@ -82,6 +87,9 @@ public class SamSiteBlockEntity extends BlockEntity
 			return;
 		}
 		if (site.inventory.get(AMMO_SLOT).isEmpty()) {
+			return;
+		}
+		if (!WireNetwork.isConnectedToRadar(world, pos)) {
 			return;
 		}
 

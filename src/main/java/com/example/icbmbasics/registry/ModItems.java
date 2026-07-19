@@ -44,6 +44,8 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("sam_ammo"));
 	public static final RegistryKey<Item> CIWS_AMMO_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("ciws_ammo"));
+	public static final RegistryKey<Item> WIRE_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("wire"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -112,6 +114,11 @@ public final class ModItems {
 	public static final Item CIWS_AMMO = Registry.register(Registries.ITEM, CIWS_AMMO_KEY,
 			new Item(new Item.Settings().registryKey(CIWS_AMMO_KEY).maxCount(64)));
 
+	public static final Item WIRE = Registry.register(Registries.ITEM, WIRE_KEY,
+			new BlockItem(ModBlocks.WIRE, new Item.Settings()
+					.registryKey(WIRE_KEY)
+					.useBlockPrefixedTranslationKey()));
+
 	private ModItems() {
 	}
 
@@ -132,6 +139,7 @@ public final class ModItems {
 			entries.add(CIWS);
 			entries.add(SAM_AMMO);
 			entries.add(CIWS_AMMO);
+			entries.add(WIRE);
 		});
 	}
 }

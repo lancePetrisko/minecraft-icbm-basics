@@ -1,0 +1,24 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1612,
+      "minecraft:walk_one_cm": 1128,
+      "minecraft:total_world_time": 1642,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 43615,
+      "minecraft:sneak_time": 188,
+      "minecraft:play_time": 1612,
+      "minecraft:jump": 3,
+      "minecraft:time_since_death": 1612
+    },
+    "minecraft:used": {
+      "minecraft:repeater": 7,
+      "minecraft:lever": 2,
+      "icbmbasics:wire": 1,
+      "icbmbasics:radar_mk1": 2,
+      "minecraft:redstone": 2,
+      "minecraft:cobblestone": 2
+    }
+  },
+  "DataVersion": 4671
+}

@@ -1,9 +1,12 @@
 package com.example.icbmbasics.block.entity;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.block.WireNetwork;
+import com.example.icbmbasics.entity.CiwsBulletEntity;
 import com.example.icbmbasics.entity.MissileEntity;
 import com.example.icbmbasics.network.AmmoScreenData;
 import com.example.icbmbasics.registry.ModBlockEntities;
+import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.screen.CiwsAmmoScreenHandler;
 
@@ -15,7 +18,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -32,23 +34,42 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A close-in weapon system: short range, fast reload, hitscan "burst" instead
- * of a projectile entity. Shares the radar/SAM's age-based rule for ignoring
- * missiles still on their own pad. Rolls {@code ICBMConfig.ciwsAccuracy} once
- * per burst rather than modeling individual bullets.
+ * A close-in weapon system: long range but low per-burst accuracy, very fast
+ * reload ({@code ICBMConfig.ciwsRoundsPerSecond}, default 50/sec - scaled
+ * down from a real Phalanx's ~75/sec, but well past the 20/sec a plain
+ * per-tick cooldown could manage, via {@link #fireAccumulator}). Each burst
+ * spawns a handful of {@link CiwsBulletEntity} tracer rounds (rendered as
+ * small flying gray-concrete "bullets") aimed at a computed firing solution
+ * ({@link #computeLeadPoint}), not the target's current position, so it
+ * visually leads a moving missile the way a real fire-control computer
+ * would. Shares the radar/SAM's age-based rule for ignoring missiles still on
+ * their own pad. Rolls {@code ICBMConfig.ciwsAccuracy} once per burst - one
+ * round is marked as the one that actually lands, and it only resolves the
+ * hit once it visually arrives, not the instant the burst fires.
  *
  * <p>Single-slot {@link Inventory} for {@code ICBM_BASICS.CIWS_AMMO} - hopper
  * fed, or right-click opens a small GUI (just the slot + player inventory) to
  * see/refill the count.
+ *
+ * <p>Only fires while {@link WireNetwork#isConnectedToRadar} finds a path to a
+ * radar - direct adjacency or a chain of {@code WIRE} blocks. Unconnected
+ * CIWS just sit idle regardless of ammo/rate.
  */
 public class CiwsBlockEntity extends BlockEntity
 		implements Inventory, ExtendedScreenHandlerFactory<AmmoScreenData> {
-	private static final int SCAN_INTERVAL_TICKS = 5;
 	private static final int LAUNCH_ACQUIRE_AGE_TICKS = 20;
+	/** Hard safety cap on bursts fired in a single tick, regardless of how high ciwsRoundsPerSecond is set. */
+	private static final int MAX_BURSTS_PER_TICK = 20;
 	public static final int AMMO_SLOT = 0;
 
 	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
-	private int cooldown;
+	/**
+	 * Fractional "rounds owed" - a tick-integer cooldown can't express more
+	 * than 20 bursts/sec, so this accumulates {@code ciwsRoundsPerSecond / 20}
+	 * every tick and fires off however many whole bursts that adds up to
+	 * (possibly more than one per tick at high rates).
+	 */
+	private double fireAccumulator;
 
 	public CiwsBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.CIWS, pos, state);
@@ -58,13 +79,17 @@ public class CiwsBlockEntity extends BlockEntity
 		if (!(world instanceof ServerWorld serverWorld)) {
 			return;
 		}
-		if (ciws.cooldown > 0) {
-			ciws.cooldown--;
-		}
-		if (world.getTime() % SCAN_INTERVAL_TICKS != 0 || ciws.cooldown > 0) {
+
+		ciws.fireAccumulator += ICBMBasics.CONFIG.ciwsRoundsPerSecond / 20.0;
+		if (ciws.fireAccumulator < 1.0) {
 			return;
 		}
 		if (ciws.inventory.get(AMMO_SLOT).isEmpty()) {
+			ciws.fireAccumulator = 0.0;
+			return;
+		}
+		if (!WireNetwork.isConnectedToRadar(world, pos)) {
+			ciws.fireAccumulator = 0.0;
 			return;
 		}
 
@@ -87,28 +112,65 @@ public class CiwsBlockEntity extends BlockEntity
 		}
 
 		if (target == null) {
+			ciws.fireAccumulator = 0.0;
 			return;
 		}
 
-		ciws.cooldown = ICBMBasics.CONFIG.ciwsFireCooldownTicks;
-		ciws.inventory.get(AMMO_SLOT).decrement(1);
-		ciws.fireBurst(serverWorld, centerX, centerY, centerZ, target);
+		int bursts = Math.min(MAX_BURSTS_PER_TICK, (int) Math.floor(ciws.fireAccumulator));
+		for (int i = 0; i < bursts && !ciws.inventory.get(AMMO_SLOT).isEmpty(); i++) {
+			ciws.fireAccumulator -= 1.0;
+			ciws.inventory.get(AMMO_SLOT).decrement(1);
+			ciws.fireBurst(serverWorld, centerX, centerY, centerZ, target);
+		}
 		ciws.markDirty();
 	}
 
+	/** One tracer round fired per burst - the rapid fireAccumulator rate is what makes it read as a "burst," not multiple rounds at once. */
+	private static final int BULLETS_PER_BURST = 1;
+	/** Random spread (blocks/tick, per axis) applied on a miss, so it doesn't look laser-straight to the target. */
+	private static final double SPREAD = 0.35;
+
 	private void fireBurst(ServerWorld world, double x, double y, double z, MissileEntity target) {
 		Vec3d from = new Vec3d(x, y, z);
-		Vec3d to = new Vec3d(target.getX(), target.getY(), target.getZ());
-		Vec3d step = to.subtract(from).multiply(1.0 / 12.0);
-		for (int i = 1; i <= 12; i++) {
-			Vec3d p = from.add(step.multiply(i));
-			world.spawnParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
-		}
-		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 1.2f, 1.8f);
+		Vec3d leadPoint = computeLeadPoint(from, target);
+		double speed = ICBMBasics.CONFIG.ciwsBulletSpeed;
+		double distance = leadPoint.distanceTo(from);
+		int travelTicks = Math.max(1, (int) Math.ceil(distance / speed));
 
-		if (world.getRandom().nextDouble() < ICBMBasics.CONFIG.ciwsAccuracy) {
-			target.destroyByInterceptor(world);
+		Vec3d direction = leadPoint.subtract(from);
+		Vec3d velocity = direction.lengthSquared() > 1.0E-6
+				? direction.normalize().multiply(speed)
+				: new Vec3d(0.0, speed, 0.0);
+
+		boolean hit = world.getRandom().nextDouble() < ICBMBasics.CONFIG.ciwsAccuracy;
+
+		for (int i = 0; i < BULLETS_PER_BURST; i++) {
+			boolean lethal = hit && i == 0;
+			Vec3d bulletVelocity = lethal ? velocity : velocity.add(
+					(world.getRandom().nextDouble() - 0.5) * SPREAD,
+					(world.getRandom().nextDouble() - 0.5) * SPREAD,
+					(world.getRandom().nextDouble() - 0.5) * SPREAD);
+
+			CiwsBulletEntity bullet = new CiwsBulletEntity(ModEntities.CIWS_BULLET, world);
+			bullet.refreshPositionAndAngles(x, y, z, 0.0f, 0.0f);
+			bullet.configure(bulletVelocity, travelTicks, lethal, target.getUuid());
+			world.spawnEntity(bullet);
 		}
+
+		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 1.2f, 1.8f);
+	}
+
+	/**
+	 * Firing solution: where the target will be by the time a tracer traveling
+	 * at {@code ICBMConfig.ciwsBulletSpeed} would reach it, assuming it holds
+	 * its current velocity. A single-pass linear lead - good enough for a
+	 * missile's fairly steady cruise/dive, and simpler than iterating to
+	 * convergence like a real fire-control solution would.
+	 */
+	private static Vec3d computeLeadPoint(Vec3d from, MissileEntity target) {
+		Vec3d targetPos = new Vec3d(target.getX(), target.getY(), target.getZ());
+		double timeToImpact = targetPos.distanceTo(from) / ICBMBasics.CONFIG.ciwsBulletSpeed;
+		return targetPos.add(target.getVelocity().multiply(timeToImpact));
 	}
 
 	// --------------------------------------------------------------- inventory
@@ -186,14 +248,14 @@ public class CiwsBlockEntity extends BlockEntity
 	@Override
 	protected void writeData(WriteView view) {
 		super.writeData(view);
-		view.putInt("Cooldown", this.cooldown);
+		view.putDouble("FireAccumulator", this.fireAccumulator);
 		Inventories.writeData(view, this.inventory);
 	}
 
 	@Override
 	protected void readData(ReadView view) {
 		super.readData(view);
-		this.cooldown = view.getInt("Cooldown", 0);
+		this.fireAccumulator = view.getDouble("FireAccumulator", 0.0);
 		this.inventory.clear();
 		Inventories.readData(view, this.inventory);
 	}
