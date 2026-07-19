@@ -2,8 +2,10 @@ package com.example.icbmbasics.client;
 
 import com.example.icbmbasics.client.render.MissileEntityRenderer;
 import com.example.icbmbasics.client.screen.ArmoredDoorScreen;
+import com.example.icbmbasics.client.screen.CiwsAmmoScreen;
 import com.example.icbmbasics.client.screen.MissileLauncherScreen;
 import com.example.icbmbasics.client.screen.RadarScreen;
+import com.example.icbmbasics.client.screen.SamAmmoScreen;
 import com.example.icbmbasics.client.screen.UsbDriveScreen;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
@@ -35,6 +37,8 @@ public class ICBMBasicsClient implements ClientModInitializer {
 		HandledScreens.register(ModScreenHandlers.USB_DRIVE, UsbDriveScreen::new);
 		HandledScreens.register(ModScreenHandlers.RADAR, RadarScreen::new);
 		HandledScreens.register(ModScreenHandlers.ARMORED_DOOR, ArmoredDoorScreen::new);
+		HandledScreens.register(ModScreenHandlers.SAM_SITE, SamAmmoScreen::new);
+		HandledScreens.register(ModScreenHandlers.CIWS, CiwsAmmoScreen::new);
 
 		// Refreshes the open launcher GUI's own waypoint list after a save/delete.
 		// The slotted drive's list needs no such payload - it rides along on the

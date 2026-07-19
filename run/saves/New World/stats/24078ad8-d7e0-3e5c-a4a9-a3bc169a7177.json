@@ -1,0 +1,25 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 296,
+      "minecraft:open_chest": 1,
+      "minecraft:time_since_rest": 4434,
+      "minecraft:walk_one_cm": 4462,
+      "minecraft:total_world_time": 4628,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 93096,
+      "minecraft:crouch_one_cm": 99,
+      "minecraft:sneak_time": 253,
+      "minecraft:play_time": 4434,
+      "minecraft:jump": 17,
+      "minecraft:time_since_death": 4434
+    },
+    "minecraft:used": {
+      "icbmbasics:radar_mk1": 1
+    },
+    "minecraft:picked_up": {
+      "minecraft:cobblestone": 16
+    }
+  },
+  "DataVersion": 4671
+}

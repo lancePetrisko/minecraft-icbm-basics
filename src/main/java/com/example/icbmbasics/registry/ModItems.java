@@ -40,6 +40,10 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("sam_site"));
 	public static final RegistryKey<Item> CIWS_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("ciws"));
+	public static final RegistryKey<Item> SAM_AMMO_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("sam_ammo"));
+	public static final RegistryKey<Item> CIWS_AMMO_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("ciws_ammo"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -100,6 +104,14 @@ public final class ModItems {
 					.registryKey(CIWS_KEY)
 					.useBlockPrefixedTranslationKey()));
 
+	/** Ammo for {@code SamSiteBlockEntity} - one consumed per interceptor launched. */
+	public static final Item SAM_AMMO = Registry.register(Registries.ITEM, SAM_AMMO_KEY,
+			new Item(new Item.Settings().registryKey(SAM_AMMO_KEY).maxCount(16)));
+
+	/** Ammo for {@code CiwsBlockEntity} - one consumed per burst fired. */
+	public static final Item CIWS_AMMO = Registry.register(Registries.ITEM, CIWS_AMMO_KEY,
+			new Item(new Item.Settings().registryKey(CIWS_AMMO_KEY).maxCount(64)));
+
 	private ModItems() {
 	}
 
@@ -118,6 +130,8 @@ public final class ModItems {
 			entries.add(ARMOR_TOOL);
 			entries.add(SAM_SITE);
 			entries.add(CIWS);
+			entries.add(SAM_AMMO);
+			entries.add(CIWS_AMMO);
 		});
 	}
 }

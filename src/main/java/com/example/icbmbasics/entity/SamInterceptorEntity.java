@@ -1,6 +1,7 @@
 package com.example.icbmbasics.entity;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.block.entity.SamSiteBlockEntity;
 import com.example.icbmbasics.registry.ModItems;
 
 import net.minecraft.entity.Entity;
@@ -41,6 +42,21 @@ public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 
 	public void setTarget(MissileEntity target) {
 		this.targetId = target.getUuid();
+	}
+
+	/**
+	 * Releases this interceptor's SAM-site claim on its target whenever it
+	 * stops existing, however that happens (hit, miss, lost target, timeout).
+	 * A single override here beats releasing at every {@code discard()} call
+	 * site in {@link #tick()} - same reasoning as {@code MissileEntity}'s own
+	 * override of this method for its active-missile registry.
+	 */
+	@Override
+	public void remove(RemovalReason reason) {
+		super.remove(reason);
+		if (this.targetId != null && this.getEntityWorld() instanceof ServerWorld serverWorld) {
+			SamSiteBlockEntity.releaseClaim(serverWorld, this.targetId);
+		}
 	}
 
 	@Override

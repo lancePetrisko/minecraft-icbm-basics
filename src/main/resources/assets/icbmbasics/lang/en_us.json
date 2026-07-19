@@ -3,6 +3,8 @@
 	"item.icbmbasics.icbm_missile": "ICBM Missile",
 	"item.icbmbasics.usb_drive": "USB Drive",
 	"item.icbmbasics.armor_tool": "Armor Zone Tool",
+	"item.icbmbasics.sam_ammo": "SAM Interceptor Rocket",
+	"item.icbmbasics.ciws_ammo": "CIWS Ammo Belt",
 	"block.icbmbasics.missile_launcher": "Missile Launcher",
 	"block.icbmbasics.radar_mk1": "Radar",
 	"block.icbmbasics.armored_block_mk1": "Armored Block Mk1",
@@ -37,5 +39,6 @@
 	"gui.icbmbasics.enter_code_first": "Enter a code first!",
 	"gui.icbmbasics.submit_code": "OK",
 	"gui.icbmbasics.code_set": "Code set.",
-	"gui.icbmbasics.wrong_code": "Wrong code."
+	"gui.icbmbasics.wrong_code": "Wrong code.",
+	"gui.icbmbasics.ammo_count": "Ammo: %s / %s"
 }

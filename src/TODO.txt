@@ -2,8 +2,9 @@ TODO File
 
 I want a feature in the menu where it says launch with a big red button within the launch platform.
 
-I want a feature within the missiles so that whatever direction its going in terms of say its launched up its vertical facing. If its traveling across
-the x axis its laying horizontally and if its going down angle the model in which its going down. Giving it that immersion
+DONE: Missiles (and SAM interceptors) orient along their velocity - vertical on boost, flat on
+cruise, angled into the dive - via a custom MissileEntityRenderer that rotates the item model
+from the entity's own yaw/pitch instead of vanilla's camera-billboard FlyingItemEntityRenderer.
 
 DONE: USB drive that stores named coordinates (own item, own GUI via right-click) and can be
 slotted into a missile launcher to browse/load its waypoints there. Launchers also got their
@@ -23,9 +24,15 @@ long range, slow reload) and a CIWS block (hitscan burst, ~40% accuracy, short r
 reload). Both are always-on/no-GUI: they scan MissileEntity's active-missile registry directly
 (the same one radar reads), ignoring missiles still on their own pad the same way radar tells
 outgoing from incoming. Placeholder texture (missile_launcher_side), no tiers yet.
-- Need to include ammo
-- Need to include logic for sams, say if one sam already fired at a specifc id missile that sam is in charge of firing at that specific one and just that
-so it will tell other sams within a similar radius that hey I've got this specific rocket dont waste your rockets on it.
+Both now take real ammo (SAM_AMMO / CIWS_AMMO, one consumed per shot) via a single-slot
+Inventory - hopper-fed, or right-click to open a small GUI (just the ammo slot + player
+inventory, plain "Ammo: X / Y" readout) to load/see the count. SAM sites also coordinate
+through a world-wide claimed-target set (SamSiteBlockEntity), so once one site fires on a
+missile every other site skips it until that interceptor resolves (hit, miss, or timeout) -
+no two sites waste a rocket on the same target.
+
+- Make the CIWS shoot like way faster
+
 
 DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
 codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count
