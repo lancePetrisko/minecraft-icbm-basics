@@ -20,6 +20,7 @@ import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModBlocks;
 import com.example.icbmbasics.registry.ModComponents;
 import com.example.icbmbasics.registry.ModEntities;
+import com.example.icbmbasics.registry.ModItemGroups;
 import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.registry.ModScreenHandlers;
 
@@ -54,6 +55,7 @@ public class ICBMBasics implements ModInitializer {
 	public void onInitialize() {
 		CONFIG = ICBMConfig.load();
 
+		ModItemGroups.register();
 		ModItems.register();
 		ModBlocks.register();
 		ModBlockEntities.register();

@@ -7,7 +7,6 @@ import com.example.icbmbasics.item.UsbDriveItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
 import net.minecraft.item.TallBlockItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -105,7 +104,7 @@ public final class ModItems {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
+		ItemGroupEvents.modifyEntriesEvent(ModItemGroups.MAIN_KEY).register(entries -> {
 			entries.add(ICBM_MISSILE);
 			entries.add(MISSILE_LAUNCHER);
 			entries.add(USB_DRIVE);

@@ -20,6 +20,7 @@ long range, slow reload) and a CIWS block (hitscan burst, ~40% accuracy, short r
 reload). Both are always-on/no-GUI: they scan MissileEntity's active-missile registry directly
 (the same one radar reads), ignoring missiles still on their own pad the same way radar tells
 outgoing from incoming. Placeholder texture (missile_launcher_side), no tiers yet.
+- Need to include ammo
 
 DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
 codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count
