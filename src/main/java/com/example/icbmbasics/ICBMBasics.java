@@ -9,6 +9,7 @@ import com.example.icbmbasics.network.DeleteDriveWaypointPayload;
 import com.example.icbmbasics.network.DeleteLauncherWaypointPayload;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
+import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.network.SaveDriveWaypointPayload;
 import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
@@ -151,6 +152,9 @@ public class ICBMBasics implements ModInitializer {
 			stack.set(ModComponents.WAYPOINTS, list);
 			ServerPlayNetworking.send(player, new DriveWaypointListPayload(list));
 		});
+
+		// S2C payload: periodic radar contact/log push while a radar GUI is open.
+		PayloadTypeRegistry.playS2C().register(RadarUpdatePayload.ID, RadarUpdatePayload.CODEC);
 
 		LOGGER.info("ICBM Basics initialized. Explosion power: {}, terrain destruction: {}",
 				CONFIG.explosionPower, CONFIG.terrainDestruction);

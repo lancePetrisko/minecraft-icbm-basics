@@ -34,6 +34,13 @@ public class ICBMConfig {
 	/** Horizontal cruise speed of the missile in blocks per tick. */
 	public double missileSpeed = 1.1;
 
+	/**
+	 * Detection radius (blocks) per radar tier, index 0 = tier 1. Each tier is
+	 * its own block/item (see {@code RadarBlock}); adding a higher tier later
+	 * just means appending another entry here plus the new block/item/recipe.
+	 */
+	public int[] radarTierDetectionRadii = {96};
+
 	public static ICBMConfig load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
 		ICBMConfig config = new ICBMConfig();
@@ -59,6 +66,13 @@ public class ICBMConfig {
 		explosionPower = Math.max(0.0f, Math.min(explosionPower, 50.0f));
 		destructionRadius = Math.max(0, Math.min(destructionRadius, 32));
 		missileSpeed = Math.max(0.2, Math.min(missileSpeed, 4.0));
+
+		if (radarTierDetectionRadii == null || radarTierDetectionRadii.length == 0) {
+			radarTierDetectionRadii = new int[]{96};
+		}
+		for (int i = 0; i < radarTierDetectionRadii.length; i++) {
+			radarTierDetectionRadii[i] = Math.max(16, Math.min(radarTierDetectionRadii[i], 512));
+		}
 	}
 
 	private void save(Path path) {

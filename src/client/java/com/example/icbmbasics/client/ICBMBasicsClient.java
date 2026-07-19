@@ -1,12 +1,15 @@
 package com.example.icbmbasics.client;
 
 import com.example.icbmbasics.client.screen.MissileLauncherScreen;
+import com.example.icbmbasics.client.screen.RadarScreen;
 import com.example.icbmbasics.client.screen.UsbDriveScreen;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
+import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModScreenHandlers;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
+import com.example.icbmbasics.screen.RadarScreenHandler;
 import com.example.icbmbasics.screen.UsbDriveScreenHandler;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -25,6 +28,7 @@ public class ICBMBasicsClient implements ClientModInitializer {
 
 		HandledScreens.register(ModScreenHandlers.MISSILE_LAUNCHER, MissileLauncherScreen::new);
 		HandledScreens.register(ModScreenHandlers.USB_DRIVE, UsbDriveScreen::new);
+		HandledScreens.register(ModScreenHandlers.RADAR, RadarScreen::new);
 
 		// Refreshes the open launcher GUI's own waypoint list after a save/delete.
 		// The slotted drive's list needs no such payload - it rides along on the
@@ -41,6 +45,16 @@ public class ICBMBasicsClient implements ClientModInitializer {
 				context.client().execute(() -> {
 					if (context.player().currentScreenHandler instanceof UsbDriveScreenHandler handler) {
 						handler.setWaypoints(payload.waypoints());
+					}
+				}));
+
+		// Refreshes the open radar GUI's contacts/log every scan interval.
+		ClientPlayNetworking.registerGlobalReceiver(RadarUpdatePayload.ID, (payload, context) ->
+				context.client().execute(() -> {
+					if (context.player().currentScreenHandler instanceof RadarScreenHandler handler
+							&& handler.getRadarPos().equals(payload.pos())) {
+						handler.setContacts(payload.contacts());
+						handler.setLog(payload.log());
 					}
 				}));
 	}

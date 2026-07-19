@@ -19,6 +19,8 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("missile_launcher"));
 	public static final RegistryKey<Item> USB_DRIVE_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("usb_drive"));
+	public static final RegistryKey<Item> RADAR_MK1_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("radar_mk1"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -35,6 +37,11 @@ public final class ModItems {
 	public static final Item USB_DRIVE = Registry.register(Registries.ITEM, USB_DRIVE_KEY,
 			new UsbDriveItem(new Item.Settings().registryKey(USB_DRIVE_KEY).maxCount(1)));
 
+	public static final Item RADAR_MK1 = Registry.register(Registries.ITEM, RADAR_MK1_KEY,
+			new BlockItem(ModBlocks.RADAR_MK1, new Item.Settings()
+					.registryKey(RADAR_MK1_KEY)
+					.useBlockPrefixedTranslationKey()));
+
 	private ModItems() {
 	}
 
@@ -43,6 +50,7 @@ public final class ModItems {
 			entries.add(ICBM_MISSILE);
 			entries.add(MISSILE_LAUNCHER);
 			entries.add(USB_DRIVE);
+			entries.add(RADAR_MK1);
 		});
 	}
 }

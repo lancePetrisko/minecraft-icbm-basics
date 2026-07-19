@@ -24,6 +24,11 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.rule.GameRules;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
+
 /**
  * A ballistic missile. Rises vertically during a short boost phase, cruises
  * toward the target's X/Z, then dives onto the target. Explodes on arrival or
@@ -46,14 +51,45 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	/** Blocks tougher than this survive the extra crater carving (obsidian etc.). */
 	private static final float MAX_CARVED_BLAST_RESISTANCE = 100.0f;
 
+	/**
+	 * All in-flight missiles per server world, so radar blocks can scan without
+	 * iterating every entity in the world. Lazily registered on this missile's
+	 * first server tick, deregistered via {@link #remove(RemovalReason)} (the
+	 * method {@code discard()} itself routes through) so a chunk merely
+	 * unloading doesn't look like an impact.
+	 */
+	private static final Map<ServerWorld, Set<MissileEntity>> ACTIVE_MISSILES = new WeakHashMap<>();
+
 	private double targetX;
 	private double targetY;
 	private double targetZ;
 	private boolean hasTarget;
+	private boolean registeredActive;
 
 	public MissileEntity(EntityType<? extends MissileEntity> type, World world) {
 		super(type, world);
 		this.noClip = false;
+	}
+
+	/** Snapshot of currently in-flight missiles in the given world. Never null. */
+	public static Set<MissileEntity> getActiveMissiles(ServerWorld world) {
+		return ACTIVE_MISSILES.getOrDefault(world, Set.of());
+	}
+
+	@Override
+	public void remove(RemovalReason reason) {
+		super.remove(reason);
+		if (this.getEntityWorld() instanceof ServerWorld serverWorld) {
+			Set<MissileEntity> active = ACTIVE_MISSILES.get(serverWorld);
+			if (active != null) {
+				active.remove(this);
+			}
+		}
+	}
+
+	/** Ticks since launch. Used by radar to tell a just-launched missile from one already in flight. */
+	public int getFlightAge() {
+		return this.age;
 	}
 
 	public void setTarget(double x, double y, double z) {
@@ -86,6 +122,11 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		ServerWorld serverWorld = (ServerWorld) world;
+
+		if (!this.registeredActive) {
+			ACTIVE_MISSILES.computeIfAbsent(serverWorld, w -> Collections.newSetFromMap(new WeakHashMap<>())).add(this);
+			this.registeredActive = true;
+		}
 
 		if (!this.hasTarget) {
 			// Should not happen (launcher always sets a target), but never fly blind.

@@ -13,6 +13,7 @@ Radar
   - Can track outgoing missiles across map get notifcations when they hit or if they're intercepted
   - Can connect to SAM sites/anti-air
   - Different tiers of Radar, each have a different level of accuracy and showing capabilites
+  - Ability to launch a satelite and see all missiles across the whole map
 
 Ground to Air Defense
   - A SAM site that launches rockets ground to air defense

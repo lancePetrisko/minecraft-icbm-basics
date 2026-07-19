@@ -2,8 +2,10 @@ package com.example.icbmbasics.registry;
 
 import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.network.LauncherScreenData;
+import com.example.icbmbasics.network.RadarScreenData;
 import com.example.icbmbasics.network.UsbDriveScreenData;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
+import com.example.icbmbasics.screen.RadarScreenHandler;
 import com.example.icbmbasics.screen.UsbDriveScreenHandler;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
@@ -19,6 +21,10 @@ public final class ModScreenHandlers {
 	public static final ScreenHandlerType<UsbDriveScreenHandler> USB_DRIVE =
 			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("usb_drive"),
 					new ExtendedScreenHandlerType<>(UsbDriveScreenHandler::new, UsbDriveScreenData.PACKET_CODEC));
+
+	public static final ScreenHandlerType<RadarScreenHandler> RADAR =
+			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("radar"),
+					new ExtendedScreenHandlerType<>(RadarScreenHandler::new, RadarScreenData.PACKET_CODEC));
 
 	private ModScreenHandlers() {
 	}

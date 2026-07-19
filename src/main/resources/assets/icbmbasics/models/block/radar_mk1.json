@@ -1,0 +1,8 @@
+{
+	"parent": "minecraft:block/cube_bottom_top",
+	"textures": {
+		"top": "icbmbasics:block/missile_launcher_top",
+		"bottom": "icbmbasics:block/missile_launcher_side",
+		"side": "icbmbasics:block/missile_launcher_side"
+	}
+}
