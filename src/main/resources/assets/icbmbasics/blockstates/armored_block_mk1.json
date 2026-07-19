@@ -1,0 +1,8 @@
+{
+	"variants": {
+		"armor_damage=0": { "model": "icbmbasics:block/armored_block_mk1_0" },
+		"armor_damage=1": { "model": "icbmbasics:block/armored_block_mk1_1" },
+		"armor_damage=2": { "model": "icbmbasics:block/armored_block_mk1_2" },
+		"armor_damage=3": { "model": "icbmbasics:block/armored_block_mk1_3" }
+	}
+}

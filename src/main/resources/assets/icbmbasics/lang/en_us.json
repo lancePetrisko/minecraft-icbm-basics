@@ -1,8 +1,15 @@
 {
 	"item.icbmbasics.icbm_missile": "ICBM Missile",
 	"item.icbmbasics.usb_drive": "USB Drive",
+	"item.icbmbasics.armor_tool": "Armor Zone Tool",
 	"block.icbmbasics.missile_launcher": "Missile Launcher",
 	"block.icbmbasics.radar_mk1": "Radar",
+	"block.icbmbasics.armored_block_mk1": "Armored Block Mk1",
+	"block.icbmbasics.armored_block_mk2": "Armored Block Mk2",
+	"block.icbmbasics.armored_block_mk3": "Armored Block Mk3",
+	"block.icbmbasics.armored_door_mk1": "Armored Door Mk1",
+	"block.icbmbasics.armored_door_mk2": "Armored Door Mk2",
+	"block.icbmbasics.armored_door_mk3": "Armored Door Mk3",
 	"entity.icbmbasics.missile": "Missile",
 	"gui.icbmbasics.confirm_target": "Confirm Target",
 	"gui.icbmbasics.target_locked": "Target locked.",
@@ -17,5 +24,14 @@
 	"gui.icbmbasics.use_current_location": "Use My Location",
 	"gui.icbmbasics.radar_log_header": "Impact Log:",
 	"gui.icbmbasics.radar_log_empty": "No impacts logged yet.",
-	"gui.icbmbasics.radar_log_impact": "Impact near %s, %s, %s"
+	"gui.icbmbasics.radar_log_impact": "Impact near %s, %s, %s",
+	"message.icbmbasics.armor_zone_full": "Armor limit reached for this zone (%s max).",
+	"message.icbmbasics.armor_zone_reanchored": "Zone re-anchored here. Blocks in zone: %s / %s.",
+	"message.icbmbasics.armor_zone_none": "No armor zone nearby to re-anchor.",
+	"gui.icbmbasics.set_code": "Set a code:",
+	"gui.icbmbasics.enter_code": "Enter code:",
+	"gui.icbmbasics.enter_code_first": "Enter a code first!",
+	"gui.icbmbasics.submit_code": "OK",
+	"gui.icbmbasics.code_set": "Code set.",
+	"gui.icbmbasics.wrong_code": "Wrong code."
 }

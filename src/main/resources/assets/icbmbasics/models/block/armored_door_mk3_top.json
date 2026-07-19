@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/door_top_left",
+	"textures": {
+		"top": "icbmbasics:item/usb_drive",
+		"bottom": "icbmbasics:item/usb_drive"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "redstone",
+	"pattern": [
+		"NNN",
+		"NBN",
+		"NNN"
+	],
+	"key": {
+		"N": "minecraft:netherite_ingot",
+		"B": "minecraft:diamond_block"
+	},
+	"result": {
+		"id": "icbmbasics:armored_block_mk3",
+		"count": 1
+	}
+}

@@ -41,6 +41,21 @@ public class ICBMConfig {
 	 */
 	public int[] radarTierDetectionRadii = {96};
 
+	/** How close (blocks) two independent armor zones' anchors must be to count as the same zone. */
+	public int armorZoneRadius = 30;
+
+	/** Max armored blocks/doors allowed in a single zone before placement is denied. */
+	public int armorZoneMaxBlocks = 128;
+
+	/**
+	 * Missile hits absorbed per armor tier, index 0 = tier 1, before the block breaks.
+	 * Shared by both armored blocks and armored doors.
+	 */
+	public int[] armorTierHits = {2, 5, 10};
+
+	/** How close (blocks) a missile impact must be to damage an armored block/door. */
+	public int armorDamageRadius = 6;
+
 	public static ICBMConfig load() {
 		Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
 		ICBMConfig config = new ICBMConfig();
@@ -72,6 +87,17 @@ public class ICBMConfig {
 		}
 		for (int i = 0; i < radarTierDetectionRadii.length; i++) {
 			radarTierDetectionRadii[i] = Math.max(16, Math.min(radarTierDetectionRadii[i], 512));
+		}
+
+		armorZoneRadius = Math.max(4, Math.min(armorZoneRadius, 256));
+		armorZoneMaxBlocks = Math.max(1, Math.min(armorZoneMaxBlocks, 4096));
+		armorDamageRadius = Math.max(1, Math.min(armorDamageRadius, 32));
+
+		if (armorTierHits == null || armorTierHits.length == 0) {
+			armorTierHits = new int[]{2, 5, 10};
+		}
+		for (int i = 0; i < armorTierHits.length; i++) {
+			armorTierHits[i] = Math.max(1, Math.min(armorTierHits[i], 200));
 		}
 	}
 

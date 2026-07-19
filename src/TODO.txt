@@ -20,10 +20,10 @@ Ground to Air Defense
   - One of those explosive machine guns that shoots bullets to shoot down missiles
   - All of these connect to radar but have accuracy levels none of them are 100%
 
-Defensive Blocks
-  - Different tiers of blocks that can take a certain amount of missiles
-  - Need to balance the blocks so that cant be stacked on top of each other. Maybe need like a 5 block gap or something
-  - A armored door with codelock that is also same tiers in-terms of block armor.
+DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
+codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count
+too) instead of a flat spacing rule. An Armor Zone Tool re-anchors a zone's center on right-click.
+Damage shows via a shared 0-3 blockstate stage (placeholder textures, same deal as the radar).
 
 Physcial EMP's
   - Making them physcial that way players have to skillfully use EMP's to disable the enemies defenses for a certain amount of time

@@ -1,9 +1,11 @@
 package com.example.icbmbasics.registry;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.network.ArmoredDoorScreenData;
 import com.example.icbmbasics.network.LauncherScreenData;
 import com.example.icbmbasics.network.RadarScreenData;
 import com.example.icbmbasics.network.UsbDriveScreenData;
+import com.example.icbmbasics.screen.ArmoredDoorScreenHandler;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
 import com.example.icbmbasics.screen.RadarScreenHandler;
 import com.example.icbmbasics.screen.UsbDriveScreenHandler;
@@ -25,6 +27,10 @@ public final class ModScreenHandlers {
 	public static final ScreenHandlerType<RadarScreenHandler> RADAR =
 			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("radar"),
 					new ExtendedScreenHandlerType<>(RadarScreenHandler::new, RadarScreenData.PACKET_CODEC));
+
+	public static final ScreenHandlerType<ArmoredDoorScreenHandler> ARMORED_DOOR =
+			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("armored_door"),
+					new ExtendedScreenHandlerType<>(ArmoredDoorScreenHandler::new, ArmoredDoorScreenData.PACKET_CODEC));
 
 	private ModScreenHandlers() {
 	}

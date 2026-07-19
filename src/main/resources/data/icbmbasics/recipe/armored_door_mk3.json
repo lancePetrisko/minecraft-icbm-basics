@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "redstone",
+	"pattern": [
+		"NN",
+		"NB",
+		"NN"
+	],
+	"key": {
+		"N": "minecraft:netherite_ingot",
+		"B": "minecraft:diamond_block"
+	},
+	"result": {
+		"id": "icbmbasics:armored_door_mk3",
+		"count": 1
+	}
+}

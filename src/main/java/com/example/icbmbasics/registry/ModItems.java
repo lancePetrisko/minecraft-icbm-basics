@@ -1,12 +1,14 @@
 package com.example.icbmbasics.registry;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.item.ArmorToolItem;
 import com.example.icbmbasics.item.UsbDriveItem;
 
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.item.TallBlockItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -21,6 +23,20 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("usb_drive"));
 	public static final RegistryKey<Item> RADAR_MK1_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("radar_mk1"));
+	public static final RegistryKey<Item> ARMORED_BLOCK_MK1_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_block_mk1"));
+	public static final RegistryKey<Item> ARMORED_BLOCK_MK2_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_block_mk2"));
+	public static final RegistryKey<Item> ARMORED_BLOCK_MK3_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_block_mk3"));
+	public static final RegistryKey<Item> ARMORED_DOOR_MK1_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_door_mk1"));
+	public static final RegistryKey<Item> ARMORED_DOOR_MK2_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_door_mk2"));
+	public static final RegistryKey<Item> ARMORED_DOOR_MK3_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armored_door_mk3"));
+	public static final RegistryKey<Item> ARMOR_TOOL_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("armor_tool"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -42,6 +58,35 @@ public final class ModItems {
 					.registryKey(RADAR_MK1_KEY)
 					.useBlockPrefixedTranslationKey()));
 
+	public static final Item ARMORED_BLOCK_MK1 = Registry.register(Registries.ITEM, ARMORED_BLOCK_MK1_KEY,
+			new BlockItem(ModBlocks.ARMORED_BLOCK_MK1, new Item.Settings()
+					.registryKey(ARMORED_BLOCK_MK1_KEY)
+					.useBlockPrefixedTranslationKey()));
+	public static final Item ARMORED_BLOCK_MK2 = Registry.register(Registries.ITEM, ARMORED_BLOCK_MK2_KEY,
+			new BlockItem(ModBlocks.ARMORED_BLOCK_MK2, new Item.Settings()
+					.registryKey(ARMORED_BLOCK_MK2_KEY)
+					.useBlockPrefixedTranslationKey()));
+	public static final Item ARMORED_BLOCK_MK3 = Registry.register(Registries.ITEM, ARMORED_BLOCK_MK3_KEY,
+			new BlockItem(ModBlocks.ARMORED_BLOCK_MK3, new Item.Settings()
+					.registryKey(ARMORED_BLOCK_MK3_KEY)
+					.useBlockPrefixedTranslationKey()));
+
+	public static final Item ARMORED_DOOR_MK1 = Registry.register(Registries.ITEM, ARMORED_DOOR_MK1_KEY,
+			new TallBlockItem(ModBlocks.ARMORED_DOOR_MK1, new Item.Settings()
+					.registryKey(ARMORED_DOOR_MK1_KEY)
+					.useBlockPrefixedTranslationKey()));
+	public static final Item ARMORED_DOOR_MK2 = Registry.register(Registries.ITEM, ARMORED_DOOR_MK2_KEY,
+			new TallBlockItem(ModBlocks.ARMORED_DOOR_MK2, new Item.Settings()
+					.registryKey(ARMORED_DOOR_MK2_KEY)
+					.useBlockPrefixedTranslationKey()));
+	public static final Item ARMORED_DOOR_MK3 = Registry.register(Registries.ITEM, ARMORED_DOOR_MK3_KEY,
+			new TallBlockItem(ModBlocks.ARMORED_DOOR_MK3, new Item.Settings()
+					.registryKey(ARMORED_DOOR_MK3_KEY)
+					.useBlockPrefixedTranslationKey()));
+
+	public static final Item ARMOR_TOOL = Registry.register(Registries.ITEM, ARMOR_TOOL_KEY,
+			new ArmorToolItem(new Item.Settings().registryKey(ARMOR_TOOL_KEY).maxCount(1)));
+
 	private ModItems() {
 	}
 
@@ -51,6 +96,13 @@ public final class ModItems {
 			entries.add(MISSILE_LAUNCHER);
 			entries.add(USB_DRIVE);
 			entries.add(RADAR_MK1);
+			entries.add(ARMORED_BLOCK_MK1);
+			entries.add(ARMORED_BLOCK_MK2);
+			entries.add(ARMORED_BLOCK_MK3);
+			entries.add(ARMORED_DOOR_MK1);
+			entries.add(ARMORED_DOOR_MK2);
+			entries.add(ARMORED_DOOR_MK3);
+			entries.add(ARMOR_TOOL);
 		});
 	}
 }

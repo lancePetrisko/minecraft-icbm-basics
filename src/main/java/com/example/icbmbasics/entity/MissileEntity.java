@@ -1,10 +1,12 @@
 package com.example.icbmbasics.entity;
 
 import com.example.icbmbasics.ICBMBasics;
+import com.example.icbmbasics.block.entity.ArmoredEntity;
 import com.example.icbmbasics.config.ICBMConfig;
 import com.example.icbmbasics.registry.ModItems;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.FlyingItemEntity;
@@ -239,6 +241,8 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 
 		world.createExplosion(null, x, y, z, config.explosionPower, sourceType);
 
+		this.damageArmoredBlocks(world, BlockPos.ofFloored(x, y, z), config.armorDamageRadius);
+
 		// Optional extra crater beyond the vanilla explosion radius.
 		if (destroyTerrain && config.destructionRadius > 0) {
 			this.carveCrater(world, BlockPos.ofFloored(x, y, z), config.destructionRadius);
@@ -257,6 +261,27 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, x, y, z, 2, 1.0, 1.0, 1.0, 0.0);
 
 		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 6.0f, 0.7f);
+	}
+
+	/** One hit each to every armored block/door ({@link ArmoredEntity}) within range of the impact. */
+	private void damageArmoredBlocks(ServerWorld world, BlockPos center, int radius) {
+		int radiusSq = radius * radius;
+		BlockPos.Mutable pos = new BlockPos.Mutable();
+
+		for (int ox = -radius; ox <= radius; ox++) {
+			for (int oy = -radius; oy <= radius; oy++) {
+				for (int oz = -radius; oz <= radius; oz++) {
+					if (ox * ox + oy * oy + oz * oz > radiusSq) {
+						continue;
+					}
+					pos.set(center.getX() + ox, center.getY() + oy, center.getZ() + oz);
+					BlockEntity blockEntity = world.getBlockEntity(pos);
+					if (blockEntity instanceof ArmoredEntity armored) {
+						armored.applyMissileHit();
+					}
+				}
+			}
+		}
 	}
 
 	/**

@@ -3,6 +3,7 @@ package com.example.icbmbasics;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.icbmbasics.block.entity.ArmoredDoorBlockEntity;
 import com.example.icbmbasics.block.entity.MissileLauncherBlockEntity;
 import com.example.icbmbasics.config.ICBMConfig;
 import com.example.icbmbasics.network.DeleteDriveWaypointPayload;
@@ -13,6 +14,7 @@ import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.network.SaveDriveWaypointPayload;
 import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
+import com.example.icbmbasics.network.SubmitDoorCodePayload;
 import com.example.icbmbasics.network.Waypoint;
 import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModBlocks;
@@ -24,10 +26,13 @@ import com.example.icbmbasics.registry.ModScreenHandlers;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
@@ -155,6 +160,37 @@ public class ICBMBasics implements ModInitializer {
 
 		// S2C payload: periodic radar contact/log push while a radar GUI is open.
 		PayloadTypeRegistry.playS2C().register(RadarUpdatePayload.ID, RadarUpdatePayload.CODEC);
+
+		// C2S payload: an armored door's keypad Submit button.
+		PayloadTypeRegistry.playC2S().register(SubmitDoorCodePayload.ID, SubmitDoorCodePayload.CODEC);
+
+		ServerPlayNetworking.registerGlobalReceiver(SubmitDoorCodePayload.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			if (!(player.getEntityWorld() instanceof ServerWorld world)) {
+				return;
+			}
+			if (!player.getBlockPos().isWithinDistance(payload.pos(), 8.0)) {
+				return;
+			}
+			if (!(world.getBlockEntity(payload.pos()) instanceof ArmoredDoorBlockEntity door)) {
+				return;
+			}
+
+			if (!door.isCodeSet()) {
+				door.setCode(payload.code());
+				player.sendMessage(Text.translatable("gui.icbmbasics.code_set"), true);
+				return;
+			}
+
+			if (door.checkCode(payload.code())) {
+				BlockState state = world.getBlockState(payload.pos());
+				if (state.getBlock() instanceof DoorBlock doorBlock) {
+					doorBlock.setOpen(player, world, state, payload.pos(), !state.get(DoorBlock.OPEN));
+				}
+			} else {
+				player.sendMessage(Text.translatable("gui.icbmbasics.wrong_code"), true);
+			}
+		});
 
 		LOGGER.info("ICBM Basics initialized. Explosion power: {}, terrain destruction: {}",
 				CONFIG.explosionPower, CONFIG.terrainDestruction);

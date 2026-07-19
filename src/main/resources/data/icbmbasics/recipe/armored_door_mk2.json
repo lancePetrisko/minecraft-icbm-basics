@@ -1,0 +1,17 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"category": "redstone",
+	"pattern": [
+		"DD",
+		"DB",
+		"DD"
+	],
+	"key": {
+		"D": "minecraft:diamond",
+		"B": "minecraft:iron_block"
+	},
+	"result": {
+		"id": "icbmbasics:armored_door_mk2",
+		"count": 1
+	}
+}

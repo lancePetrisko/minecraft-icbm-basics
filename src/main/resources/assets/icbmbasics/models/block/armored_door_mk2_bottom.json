@@ -1,0 +1,7 @@
+{
+	"parent": "minecraft:block/door_bottom_left",
+	"textures": {
+		"top": "icbmbasics:block/missile_launcher_top",
+		"bottom": "icbmbasics:block/missile_launcher_top"
+	}
+}

@@ -1,0 +1,24 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "minecraft:lever": 1,
+      "icbmbasics:armored_door_mk1": 2,
+      "icbmbasics:armored_block_mk1": 34,
+      "icbmbasics:armor_tool": 2
+    },
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 387,
+      "minecraft:time_since_rest": 2968,
+      "minecraft:walk_one_cm": 3213,
+      "minecraft:total_world_time": 3245,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 44289,
+      "minecraft:crouch_one_cm": 151,
+      "minecraft:sneak_time": 83,
+      "minecraft:play_time": 2968,
+      "minecraft:jump": 13,
+      "minecraft:time_since_death": 2968
+    }
+  },
+  "DataVersion": 4671
+}
