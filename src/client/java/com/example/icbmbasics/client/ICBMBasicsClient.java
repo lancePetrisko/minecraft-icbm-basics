@@ -1,6 +1,8 @@
 package com.example.icbmbasics.client;
 
 import com.example.icbmbasics.client.render.MissileEntityRenderer;
+import com.example.icbmbasics.client.render.MonitorBlockEntityRenderer;
+import com.example.icbmbasics.client.render.MonitorRenderData;
 import com.example.icbmbasics.client.screen.ArmoredDoorScreen;
 import com.example.icbmbasics.client.screen.CiwsAmmoScreen;
 import com.example.icbmbasics.client.screen.MissileLauncherScreen;
@@ -9,7 +11,9 @@ import com.example.icbmbasics.client.screen.SamAmmoScreen;
 import com.example.icbmbasics.client.screen.UsbDriveScreen;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
+import com.example.icbmbasics.network.MonitorUpdatePayload;
 import com.example.icbmbasics.network.RadarUpdatePayload;
+import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModScreenHandlers;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
@@ -18,6 +22,7 @@ import com.example.icbmbasics.screen.UsbDriveScreenHandler;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 
@@ -43,6 +48,9 @@ public class ICBMBasicsClient implements ClientModInitializer {
 		HandledScreens.register(ModScreenHandlers.ARMORED_DOOR, ArmoredDoorScreen::new);
 		HandledScreens.register(ModScreenHandlers.SAM_SITE, SamAmmoScreen::new);
 		HandledScreens.register(ModScreenHandlers.CIWS, CiwsAmmoScreen::new);
+
+		// Monitors are a plain always-on world display, not a GUI - see MonitorBlockEntityRenderer.
+		BlockEntityRendererRegistry.register(ModBlockEntities.MONITOR, MonitorBlockEntityRenderer::new);
 
 		// Refreshes the open launcher GUI's own waypoint list after a save/delete.
 		// The slotted drive's list needs no such payload - it rides along on the
@@ -71,5 +79,12 @@ public class ICBMBasicsClient implements ClientModInitializer {
 						handler.setLog(payload.log());
 					}
 				}));
+
+		// Refreshes a monitor's cached snapshot - not tied to any open screen, since
+		// monitors render constantly in the world regardless of GUIs.
+		ClientPlayNetworking.registerGlobalReceiver(MonitorUpdatePayload.ID, (payload, context) ->
+				context.client().execute(() ->
+						MonitorRenderData.put(payload.monitorPos(), payload.radarPos(),
+								payload.detectionRadius(), payload.contacts())));
 	}
 }

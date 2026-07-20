@@ -5,6 +5,7 @@ import com.example.icbmbasics.block.entity.ArmoredBlockEntity;
 import com.example.icbmbasics.block.entity.ArmoredDoorBlockEntity;
 import com.example.icbmbasics.block.entity.CiwsBlockEntity;
 import com.example.icbmbasics.block.entity.MissileLauncherBlockEntity;
+import com.example.icbmbasics.block.entity.MonitorBlockEntity;
 import com.example.icbmbasics.block.entity.RadarBlockEntity;
 import com.example.icbmbasics.block.entity.SamSiteBlockEntity;
 
@@ -42,6 +43,10 @@ public final class ModBlockEntities {
 	public static final BlockEntityType<CiwsBlockEntity> CIWS =
 			Registry.register(Registries.BLOCK_ENTITY_TYPE, ICBMBasics.id("ciws"),
 					FabricBlockEntityTypeBuilder.create(CiwsBlockEntity::new, ModBlocks.CIWS).build());
+
+	public static final BlockEntityType<MonitorBlockEntity> MONITOR =
+			Registry.register(Registries.BLOCK_ENTITY_TYPE, ICBMBasics.id("monitor"),
+					FabricBlockEntityTypeBuilder.create(MonitorBlockEntity::new, ModBlocks.MONITOR).build());
 
 	private ModBlockEntities() {
 	}

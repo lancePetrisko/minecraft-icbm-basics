@@ -10,6 +10,7 @@ import com.example.icbmbasics.network.DeleteDriveWaypointPayload;
 import com.example.icbmbasics.network.DeleteLauncherWaypointPayload;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
+import com.example.icbmbasics.network.MonitorUpdatePayload;
 import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.network.SaveDriveWaypointPayload;
 import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
@@ -162,6 +163,7 @@ public class ICBMBasics implements ModInitializer {
 
 		// S2C payload: periodic radar contact/log push while a radar GUI is open.
 		PayloadTypeRegistry.playS2C().register(RadarUpdatePayload.ID, RadarUpdatePayload.CODEC);
+		PayloadTypeRegistry.playS2C().register(MonitorUpdatePayload.ID, MonitorUpdatePayload.CODEC);
 
 		// C2S payload: an armored door's keypad Submit button.
 		PayloadTypeRegistry.playC2S().register(SubmitDoorCodePayload.ID, SubmitDoorCodePayload.CODEC);

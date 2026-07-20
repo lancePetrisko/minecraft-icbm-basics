@@ -23,6 +23,7 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import net.minecraft.world.rule.GameRules;
 
@@ -52,6 +53,27 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	private static final int MAX_FLIGHT_TICKS = 20 * 60;
 	/** Blocks tougher than this survive the extra crater carving (obsidian etc.). */
 	private static final float MAX_CARVED_BLAST_RESISTANCE = 100.0f;
+	/**
+	 * Terrain-hugging cruise (cruise missiles only - see {@link #cruiseMissile}):
+	 * instead of leveling off at whatever altitude boost happened to reach, the
+	 * missile steers toward this height above whatever's directly below it,
+	 * re-sampled every tick. Currently a purely cosmetic "flies low" look for
+	 * radar detection specifically - the actual detection-radius break it gets
+	 * is {@link #RADAR_CROSS_SECTION_MULTIPLIER}, not this altitude itself,
+	 * since radar/SAM/CIWS are still plain distance-based with no
+	 * line-of-sight/altitude check (see the TODO note about a future radar
+	 * overhaul for that).
+	 */
+	private static final int CRUISE_HEIGHT_ABOVE_GROUND = 12;
+	/** How eagerly cruise altitude corrects toward the ground-following target each tick. */
+	private static final double CRUISE_TERRAIN_GAIN = 0.15;
+	/** A SAM interceptor homing on this missile within this distance triggers a one-time juke. */
+	private static final double JUKE_TRIGGER_DISTANCE = 12.0;
+	private static final double JUKE_TRIGGER_DISTANCE_SQ = JUKE_TRIGGER_DISTANCE * JUKE_TRIGGER_DISTANCE;
+	/** Sideways speed of the juke dodge, relative to the missile's own cruise speed. */
+	private static final double JUKE_STRENGTH = 1.4;
+	/** How much smaller a cruise missile's effective radar/SAM/CIWS detection radius is, vs. a standard missile's 1.0. */
+	private static final double RADAR_CROSS_SECTION_MULTIPLIER = 0.55;
 
 	/**
 	 * All in-flight missiles per server world, so radar blocks can scan without
@@ -67,6 +89,15 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	private double targetZ;
 	private boolean hasTarget;
 	private boolean registeredActive;
+	/** Whether this missile has already spent its one-time SAM-evasion juke. */
+	private boolean hasJuked;
+	/**
+	 * Set by the launcher at spawn time based on which item was consumed
+	 * ({@code ICBM_MISSILE} vs {@code CRUISE_MISSILE}) - gates terrain-hugging
+	 * cruise, the SAM-evasion juke, and the smaller radar cross-section. A
+	 * standard missile gets none of these.
+	 */
+	private boolean cruiseMissile;
 
 	public MissileEntity(EntityType<? extends MissileEntity> type, World world) {
 		super(type, world);
@@ -121,6 +152,19 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		this.hasTarget = true;
 	}
 
+	public void setCruiseMissile(boolean cruiseMissile) {
+		this.cruiseMissile = cruiseMissile;
+	}
+
+	public boolean isCruiseMissile() {
+		return this.cruiseMissile;
+	}
+
+	/** How much smaller this missile's effective detection radius is against radar/SAM/CIWS - 1.0 for a standard missile. */
+	public double getRadarCrossSectionMultiplier() {
+		return this.cruiseMissile ? RADAR_CROSS_SECTION_MULTIPLIER : 1.0;
+	}
+
 	@Override
 	protected void initDataTracker(DataTracker.Builder builder) {
 		// No synced data needed; position/velocity use vanilla entity tracking.
@@ -157,6 +201,9 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		this.updateVelocity();
+		if (this.cruiseMissile && !this.hasJuked) {
+			this.checkSamEvasion(serverWorld);
+		}
 		this.updateRotation();
 		this.move(MovementType.SELF, this.getVelocity());
 
@@ -231,12 +278,60 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 			// missile arrives at (targetX, targetY, targetZ) in a smooth arc.
 			double dy = this.targetY - this.getY();
 			vy = MathHelper.clamp(speed * dy / horizontalDistance * 1.5, -speed * 2.0, speed);
+		} else if (this.cruiseMissile) {
+			// Cruise phase (cruise missiles only): terrain-hugging - steer toward
+			// a fixed height above whatever's directly below right now, rather
+			// than just leveling off at whatever altitude boost reached.
+			int groundY = this.getEntityWorld().getTopY(
+					Heightmap.Type.MOTION_BLOCKING, MathHelper.floor(this.getX()), MathHelper.floor(this.getZ()));
+			double desiredY = groundY + CRUISE_HEIGHT_ABOVE_GROUND;
+			vy = MathHelper.clamp((desiredY - this.getY()) * CRUISE_TERRAIN_GAIN, -speed, speed);
 		} else {
-			// Cruise phase: gently settle onto a flat trajectory.
+			// Cruise phase (standard missile): gently settle onto a flat trajectory.
 			vy = this.getVelocity().y * 0.85;
 		}
 
 		this.setVelocity(dx * speed, vy, dz * speed);
+	}
+
+	/**
+	 * Checks for a SAM interceptor homing in close enough to matter and, if
+	 * found, spends this missile's one-time juke: a lateral velocity kick
+	 * perpendicular to its current heading, picked randomly left or right.
+	 * Deliberately a single dodge rather than continuous evasive AI - just
+	 * enough to occasionally beat a shot that's already committed, not to make
+	 * SAM sites hopeless.
+	 */
+	private void checkSamEvasion(ServerWorld world) {
+		var interceptors = world.getEntitiesByClass(SamInterceptorEntity.class,
+				this.getBoundingBox().expand(JUKE_TRIGGER_DISTANCE),
+				interceptor -> this.getUuid().equals(interceptor.getTargetId()));
+		if (interceptors.isEmpty()) {
+			return;
+		}
+
+		boolean incoming = false;
+		for (SamInterceptorEntity interceptor : interceptors) {
+			if (this.squaredDistanceTo(interceptor) <= JUKE_TRIGGER_DISTANCE_SQ) {
+				incoming = true;
+				break;
+			}
+		}
+		if (!incoming) {
+			return;
+		}
+
+		this.hasJuked = true;
+		Vec3d v = this.getVelocity();
+		double horizontal = v.horizontalLength();
+		if (horizontal < 1.0E-5) {
+			return;
+		}
+		// Perpendicular to the current horizontal heading, picked randomly left/right.
+		double side = this.getRandom().nextBoolean() ? 1.0 : -1.0;
+		double dodgeX = -v.z / horizontal * JUKE_STRENGTH * side;
+		double dodgeZ = v.x / horizontal * JUKE_STRENGTH * side;
+		this.setVelocity(v.x + dodgeX, v.y, v.z + dodgeZ);
 	}
 
 	/**
@@ -365,7 +460,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 
 	@Override
 	public ItemStack getStack() {
-		return new ItemStack(ModItems.ICBM_MISSILE);
+		return new ItemStack(this.cruiseMissile ? ModItems.CRUISE_MISSILE : ModItems.ICBM_MISSILE);
 	}
 
 	@Override
@@ -375,6 +470,8 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		view.putDouble("TargetZ", this.targetZ);
 		view.putBoolean("HasTarget", this.hasTarget);
 		view.putInt("FlightAge", this.age);
+		view.putBoolean("HasJuked", this.hasJuked);
+		view.putBoolean("CruiseMissile", this.cruiseMissile);
 	}
 
 	@Override
@@ -384,5 +481,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		this.targetZ = view.getDouble("TargetZ", 0.0);
 		this.hasTarget = view.getBoolean("HasTarget", false);
 		this.age = view.getInt("FlightAge", 0);
+		this.hasJuked = view.getBoolean("HasJuked", false);
+		this.cruiseMissile = view.getBoolean("CruiseMissile", false);
 	}
 }

@@ -44,6 +44,11 @@ public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 		this.targetId = target.getUuid();
 	}
 
+	/** The missile UUID this interceptor is homing on - used by {@code MissileEntity} to notice it's being chased and juke. */
+	public UUID getTargetId() {
+		return this.targetId;
+	}
+
 	/**
 	 * Releases this interceptor's SAM-site claim on its target whenever it
 	 * stops existing, however that happens (hit, miss, lost target, timeout).

@@ -93,21 +93,23 @@ public class SamSiteBlockEntity extends BlockEntity
 			return;
 		}
 
-		double radiusSq = (double) ICBMBasics.CONFIG.samDetectionRadius * ICBMBasics.CONFIG.samDetectionRadius;
 		double centerX = pos.getX() + 0.5;
 		double centerY = pos.getY() + 0.5;
 		double centerZ = pos.getZ() + 0.5;
 
 		Set<UUID> claimed = CLAIMED_TARGETS.getOrDefault(serverWorld, Set.of());
 
+		// A missile's own radar cross-section (smaller for cruise missiles)
+		// shrinks the effective detection radius used against it specifically.
 		MissileEntity target = null;
 		double bestDistanceSq = Double.MAX_VALUE;
 		for (MissileEntity missile : MissileEntity.getActiveMissiles(serverWorld)) {
 			if (missile.getFlightAge() <= LAUNCH_ACQUIRE_AGE_TICKS || claimed.contains(missile.getUuid())) {
 				continue;
 			}
+			double effectiveRadius = ICBMBasics.CONFIG.samDetectionRadius * missile.getRadarCrossSectionMultiplier();
 			double distanceSq = missile.squaredDistanceTo(centerX, centerY, centerZ);
-			if (distanceSq <= radiusSq && distanceSq < bestDistanceSq) {
+			if (distanceSq <= effectiveRadius * effectiveRadius && distanceSq < bestDistanceSq) {
 				bestDistanceSq = distanceSq;
 				target = missile;
 			}

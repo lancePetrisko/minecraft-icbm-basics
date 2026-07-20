@@ -1,6 +1,8 @@
 {
 	"itemGroup.icbmbasics.main": "ICBM Basics",
 	"item.icbmbasics.icbm_missile": "ICBM Missile",
+	"item.icbmbasics.cruise_missile": "Cruise Missile",
+	"item.icbmbasics.cruise_missile.tooltip": "Flies low and less likely to be hit or targeted by radar",
 	"item.icbmbasics.usb_drive": "USB Drive",
 	"item.icbmbasics.armor_tool": "Armor Zone Tool",
 	"item.icbmbasics.sam_ammo": "SAM Interceptor Rocket",
@@ -16,6 +18,7 @@
 	"block.icbmbasics.sam_site": "SAM Site",
 	"block.icbmbasics.ciws": "CIWS",
 	"block.icbmbasics.wire": "Signal Wire",
+	"block.icbmbasics.monitor": "Monitor",
 	"entity.icbmbasics.missile": "Missile",
 	"entity.icbmbasics.sam_interceptor": "SAM Interceptor",
 	"entity.icbmbasics.ciws_bullet": "CIWS Round",

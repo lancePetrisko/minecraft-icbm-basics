@@ -2,6 +2,7 @@ package com.example.icbmbasics.registry;
 
 import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.item.ArmorToolItem;
+import com.example.icbmbasics.item.CruiseMissileItem;
 import com.example.icbmbasics.item.UsbDriveItem;
 
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -16,6 +17,8 @@ import net.minecraft.registry.RegistryKeys;
 public final class ModItems {
 	public static final RegistryKey<Item> ICBM_MISSILE_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("icbm_missile"));
+	public static final RegistryKey<Item> CRUISE_MISSILE_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("cruise_missile"));
 	public static final RegistryKey<Item> MISSILE_LAUNCHER_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("missile_launcher"));
 	public static final RegistryKey<Item> USB_DRIVE_KEY =
@@ -46,6 +49,8 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("ciws_ammo"));
 	public static final RegistryKey<Item> WIRE_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("wire"));
+	public static final RegistryKey<Item> MONITOR_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("monitor"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -53,6 +58,16 @@ public final class ModItems {
 	 */
 	public static final Item ICBM_MISSILE = Registry.register(Registries.ITEM, ICBM_MISSILE_KEY,
 			new Item(new Item.Settings().registryKey(ICBM_MISSILE_KEY).maxCount(16)));
+
+	/**
+	 * Same launcher ammo as {@code ICBM_MISSILE}, but the spawned
+	 * {@code MissileEntity} is flagged as a cruise missile (see
+	 * {@code MissileLauncherBlockEntity#tryLaunch}): terrain-hugging cruise, a
+	 * one-time SAM-evasion juke, and a smaller effective radar detection
+	 * radius. The plain {@code ICBM_MISSILE} gets none of that.
+	 */
+	public static final Item CRUISE_MISSILE = Registry.register(Registries.ITEM, CRUISE_MISSILE_KEY,
+			new CruiseMissileItem(new Item.Settings().registryKey(CRUISE_MISSILE_KEY).maxCount(16)));
 
 	public static final Item MISSILE_LAUNCHER = Registry.register(Registries.ITEM, MISSILE_LAUNCHER_KEY,
 			new BlockItem(ModBlocks.MISSILE_LAUNCHER, new Item.Settings()
@@ -119,12 +134,18 @@ public final class ModItems {
 					.registryKey(WIRE_KEY)
 					.useBlockPrefixedTranslationKey()));
 
+	public static final Item MONITOR = Registry.register(Registries.ITEM, MONITOR_KEY,
+			new BlockItem(ModBlocks.MONITOR, new Item.Settings()
+					.registryKey(MONITOR_KEY)
+					.useBlockPrefixedTranslationKey()));
+
 	private ModItems() {
 	}
 
 	public static void register() {
 		ItemGroupEvents.modifyEntriesEvent(ModItemGroups.MAIN_KEY).register(entries -> {
 			entries.add(ICBM_MISSILE);
+			entries.add(CRUISE_MISSILE);
 			entries.add(MISSILE_LAUNCHER);
 			entries.add(USB_DRIVE);
 			entries.add(RADAR_MK1);
@@ -140,6 +161,7 @@ public final class ModItems {
 			entries.add(SAM_AMMO);
 			entries.add(CIWS_AMMO);
 			entries.add(WIRE);
+			entries.add(MONITOR);
 		});
 	}
 }

@@ -1,0 +1,9 @@
+{
+	"parent": "minecraft:block/orientable_with_bottom",
+	"textures": {
+		"front": "icbmbasics:block/missile_launcher_front",
+		"side": "icbmbasics:block/missile_launcher_side",
+		"top": "icbmbasics:block/missile_launcher_top",
+		"bottom": "icbmbasics:block/missile_launcher_side"
+	}
+}

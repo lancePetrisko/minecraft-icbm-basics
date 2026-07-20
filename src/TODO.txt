@@ -1,91 +1,60 @@
 TODO File
 
+
+Suggestions (theorycraft, not decided/started):
+
 Advanced missile intelligence
-Make it so some missiles are smart and have evasive manoovers or fly lower to the ground to avoid detection
-Make it so the defensive missiles are a certain speed which can be slower than say a hypersonic missile and will explode after a certain amount of time
+  - Not yet done: a smart/evasive missile as its own data variant (e.g. ICBM_MISSILE_MK2 profile)
+    - reuse MissileEntity's phases, just alter cruise altitude/add jink instead of a whole new
+    flight system. Terrain-hugging and SAM evasion (below) both shipped as behavior on the one
+    existing missile type instead, not a separate item.
+  - Not yet done: a simpler alternative to full evasion AI - a radarCrossSection multiplier per
+    missile type that shrinks the effective detection radius against it in radar/SAM/CIWS scans.
+    Would pair naturally with the line-of-sight/altitude radar overhaul noted above.
 
+Defensive missile speed / self-destruct timer
+  - Add samMaxFlightTicks (or similar) so interceptors self-discard via the existing
+    remove(RemovalReason) path, releasing CLAIMED_TARGETS automatically.
+  - Decide if this is about balance (cap interceptor speed advantage) or realism (fuel/burn
+    time) - if fuel, mirror MissileEntity's boost/cruise/terminal phase structure on interceptors
+    for symmetry.
 
-Advanced Features & Ideas/Roadmap
-Radar
-  - Shows incoming missiles
-  - Can track outgoing missiles across map get notifcations when they hit or if they're intercepted
-  - Different tiers of Radar, each have a different level of accuracy and showing capabilites
-  - Ability to launch a satelite and see all missiles across the whole map
+Radar tiers
+  - Differentiate tiers beyond radius: scan interval (currently a shared SCAN_INTERVAL_TICKS,
+    would need to go per-tier), position fidelity (lower tiers jitter/round contact coords,
+    higher tiers exact), and outgoing-track range (only top tier keeps whole-map outgoing
+    tracking, lower tiers lose the track past their own radius).
+  - Open question: if multiple radars ever coexist, do SAM/CIWS care which radar they're wired
+    to (tier/quality) or just that WireNetwork finds *a* radar at all (current behavior)?
 
-Monitors to connect and display the radar
+Satellite (map-wide detection)
+  - Simplest route, most consistent with existing patterns: a placeable "satellite uplink" block,
+    basically a radar tier with unlimited radius and no wire requirement - reuses
+    RadarBlockEntity's scan/push logic almost as-is.
+  - More thematic but bigger lift: an actually-launched entity that settles into "orbit" and
+    feeds a linked ground station - needs its own entity type, an ownership/link model, and a
+    decision on whether it's shootable (SAM/CIWS only scan MissileEntity's registry today, so a
+    satellite would need to opt in or stay immune).
 
-Missile Silo
-  - Display the loaded missile on top of the missile silo
+Missile Silo - display loaded missile
+  - Rendering-only, no new gameplay logic. Reuse the ItemModelManager.updateForNonLivingEntity
+    call already solved in MissileEntityRenderer, just with fixed orientation instead of
+    velocity-derived yaw/pitch. Good low-risk first pick since it shares code with something
+    already built.
 
+Physical EMPs
+  - Thrown/placed charging entity, similar shape to a missile/interceptor rather than a block.
+  - Cheapest way to "disable defenses": a per-block-entity empDisabledUntilTick gate checked
+    alongside SAM/CIWS's existing ammo/wire/cooldown checks in tick() - additive and reversible,
+    no need to actually sever/destroy the WIRE network.
+  - Charging noise: periodic world.playSound on a tick counter - would be the mod's first
+    looping-while-active sound, nothing else does this yet.
 
+Other ideas not yet in the roadmap
+  - Radar jamming - EMP/jammer feeds radar false contacts or blanks the scope; cheap since
+    RadarUpdatePayload is just a data push to spoof.
+  - Salvo/MIRV fire - reuse a launcher's existing per-block waypoint list as a target queue for
+    multiple missiles instead of one target per launch.
+  - Ammo-empty alert for SAM/CIWS - currently a silent no-op per CLAUDE.md; a simple particle/
+    visual "out of ammo" state would close that gap cheaply.
 
-
-Physcial EMP's
-  - Making them physcial that way players have to skillfully use EMP's to disable the enemies defenses for a certain amount of time
-  - They make noise as they're being charged or used outside an enemies base
-
-
-Archived:
-
-DONE: CIWS now fires 1 tracer round per burst instead of 3 (BULLETS_PER_BURST 3 -> 1 in
-CiwsBlockEntity - the rapid fireAccumulator rate is what reads as a "burst" now, not multiple
-rounds fired at once), and its range went up again: ciwsDetectionRadius 120 -> 200.
-
-DONE: Fixed a real bug where CIWS could never fire faster than 4 bursts/sec no matter what
-ciwsFireCooldownTicks said - a leftover SCAN_INTERVAL_TICKS=5 outer gate only let the tick logic
-run on ticks divisible by 5, capping it below the cooldown's own limit. Then went further per
-request: replaced the whole tick-cooldown model with a fractional fireAccumulator
-(CiwsBlockEntity) driven by a new ciwsRoundsPerSecond config (default 50/sec, ~5x the old rate,
-close to a real Phalanx's ~75/sec) - a tick-integer cooldown tops out at 20/sec, the accumulator
-doesn't. Can fire multiple bursts in a single tick at high rates (capped at 20/tick as a safety
-net). Also widened the per-burst tracer spread (0.15 -> 0.35 blocks/tick) so the 3 rounds in a
-burst read as visually distinct instead of nearly overlapping.
-
-DONE: CIWS fire control - computes a firing solution each burst (CiwsBlockEntity.computeLeadPoint):
-a single-pass lead using the target's current velocity and a configurable tracer speed
-(ciwsBulletSpeed, 4.0 blocks/tick) to predict where it'll be, then aims the tracer burst there
-instead of at its current position. Traded accuracy for range: ciwsDetectionRadius 40 -> 60,
-ciwsAccuracy 0.4 -> 0.3.
-
-DONE: CIWS bursts now spawn real CiwsBulletEntity tracer rounds (3 per burst, small flying
-gray-concrete "bullet" via MissileEntityRenderer, same reuse as the missile/SAM interceptor -
-no new textures) instead of an instant particle line. Each round flies a straight ballistic
-line toward the burst's already-computed lead point at ciwsBulletSpeed; only the round the
-accuracy roll marked lethal can actually call MissileEntity.destroyByInterceptor, and only once
-it "arrives" (travelTicks elapsed) rather than instantly at the muzzle, so the explosion payoff
-lines up with the tracer visually reaching the target.
-
-DONE: Missiles (and SAM interceptors) orient along their velocity - vertical on boost, flat on
-cruise, angled into the dive - via a custom MissileEntityRenderer that rotates the item model
-from the entity's own yaw/pitch instead of vanilla's camera-billboard FlyingItemEntityRenderer.
-
-DONE: USB drive that stores named coordinates (own item, own GUI via right-click) and can be
-slotted into a missile launcher to browse/load its waypoints there. Launchers also got their
-own per-block waypoint list instead of one global shared list.
-
-DONE: SAM sites/CIWS only work when wired to a radar - a new plain WIRE block (ModBlocks.WIRE,
-no entity) forms a network; WireNetwork.isConnectedToRadar does a capped BFS (4096 nodes) over
-orthogonal neighbors from the SAM/CIWS's own position, following through WIRE blocks and
-succeeding on direct adjacency or a chain reaching any RadarBlock. Checked once per scan
-interval in SamSiteBlockEntity/CiwsBlockEntity.tick alongside the existing ammo/cooldown gates -
-an unconnected site just sits idle. Recipe: 6 copper ingots + 1 redstone -> 8 wire.
-
-DONE: Ground to Air Defense - a SAM site block (homing interceptor rocket, ~60% accuracy,
-long range, slow reload) and a CIWS block (hitscan burst, ~40% accuracy, short range, fast
-reload). Both are always-on/no-GUI: they scan MissileEntity's active-missile registry directly
-(the same one radar reads), ignoring missiles still on their own pad the same way radar tells
-outgoing from incoming. Placeholder texture (missile_launcher_side), no tiers yet.
-Both now take real ammo (SAM_AMMO / CIWS_AMMO, one consumed per shot) via a single-slot
-Inventory - hopper-fed, or right-click to open a small GUI (just the ammo slot + player
-inventory, plain "Ammo: X / Y" readout) to load/see the count. SAM sites also coordinate
-through a world-wide claimed-target set (SamSiteBlockEntity), so once one site fires on a
-missile every other site skips it until that interceptor resolves (hit, miss, or timeout) -
-no two sites waste a rocket on the same target.
-
-DONE: CIWS fires 100% faster - ciwsFireCooldownTicks halved (10 -> 5), so it now fires every
-5 ticks (0.25s) instead of every 10 (0.5s), matching its own SCAN_INTERVAL_TICKS.
-
-DONE: Defensive Blocks - 3 tiers of armored blocks (2/5/10 missile hits) and matching armored
-codelock doors, both capped by an "armor zone" system (128 blocks per 30-block zone, doors count
-too) instead of a flat spacing rule. An Armor Zone Tool re-anchors a zone's center on right-click.
-Damage shows via a shared 0-3 blockstate stage (placeholder textures, same deal as the radar).

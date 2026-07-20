@@ -48,6 +48,12 @@ public class RadarBlockEntity extends BlockEntity implements ExtendedScreenHandl
 	private static final int SCAN_INTERVAL_TICKS = 10;
 	private static final int LAUNCH_ACQUIRE_AGE_TICKS = 20;
 	private static final int MAX_LOG_ENTRIES = 12;
+	/**
+	 * How long a monitor's ping keeps this radar scanning even with no GUI open.
+	 * A few times {@code MonitorBlockEntity}'s own scan interval, so a monitor
+	 * that's still linked never lets the radar go idle between its own pings.
+	 */
+	private static final int MONITOR_ACTIVE_WINDOW_TICKS = 40;
 
 	private final int tier;
 	private final int detectionRadius;
@@ -57,6 +63,8 @@ public class RadarBlockEntity extends BlockEntity implements ExtendedScreenHandl
 	private final Map<UUID, Boolean> outgoingFlags = new HashMap<>();
 	private final Deque<RadarLogEntry> log = new ArrayDeque<>();
 	private final Set<ServerPlayerEntity> viewers = new HashSet<>();
+	/** Last world tick a linked {@code MonitorBlockEntity} pinged this radar. Not persisted - self-expiring. */
+	private long lastMonitorPingTick = Long.MIN_VALUE;
 
 	public RadarBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.RADAR, pos, state);
@@ -89,6 +97,11 @@ public class RadarBlockEntity extends BlockEntity implements ExtendedScreenHandl
 		this.viewers.remove(player);
 	}
 
+	/** Called by a linked {@code MonitorBlockEntity} each time it scans, keeping this radar active without a GUI open. */
+	public void pulseFromMonitor(long currentTick) {
+		this.lastMonitorPingTick = currentTick;
+	}
+
 	private List<RadarContact> buildContacts() {
 		List<RadarContact> contacts = new ArrayList<>(this.acquired.size());
 		for (MissileEntity missile : this.acquired.values()) {
@@ -101,23 +114,29 @@ public class RadarBlockEntity extends BlockEntity implements ExtendedScreenHandl
 	// ---------------------------------------------------------------- ticking
 
 	public static void tick(World world, BlockPos pos, BlockState state, RadarBlockEntity radar) {
-		if (!(world instanceof ServerWorld serverWorld) || radar.viewers.isEmpty()) {
+		if (!(world instanceof ServerWorld serverWorld)) {
+			return;
+		}
+		boolean monitorsActive = world.getTime() - radar.lastMonitorPingTick <= MONITOR_ACTIVE_WINDOW_TICKS;
+		if (radar.viewers.isEmpty() && !monitorsActive) {
 			return;
 		}
 		if (world.getTime() % SCAN_INTERVAL_TICKS != 0) {
 			return;
 		}
 
-		double radiusSq = (double) radar.detectionRadius * radar.detectionRadius;
 		Set<MissileEntity> active = MissileEntity.getActiveMissiles(serverWorld);
 
-		// Acquire new contacts within range.
+		// Acquire new contacts within range. A missile's own radar cross-section
+		// (smaller for cruise missiles) shrinks the effective detection radius
+		// used against it specifically, rather than radar's own radius changing.
 		for (MissileEntity missile : active) {
 			UUID id = missile.getUuid();
 			if (radar.acquired.containsKey(id)) {
 				continue;
 			}
-			if (missile.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= radiusSq) {
+			double effectiveRadius = radar.detectionRadius * missile.getRadarCrossSectionMultiplier();
+			if (missile.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= effectiveRadius * effectiveRadius) {
 				radar.acquired.put(id, missile);
 				radar.outgoingFlags.put(id, missile.getFlightAge() <= LAUNCH_ACQUIRE_AGE_TICKS);
 			}
@@ -139,7 +158,8 @@ public class RadarBlockEntity extends BlockEntity implements ExtendedScreenHandl
 			}
 
 			boolean outgoing = radar.outgoingFlags.getOrDefault(entry.getKey(), false);
-			if (!outgoing && missile.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > radiusSq) {
+			double effectiveRadius = radar.detectionRadius * missile.getRadarCrossSectionMultiplier();
+			if (!outgoing && missile.squaredDistanceTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > effectiveRadius * effectiveRadius) {
 				radar.outgoingFlags.remove(entry.getKey());
 				it.remove();
 				changed = true;

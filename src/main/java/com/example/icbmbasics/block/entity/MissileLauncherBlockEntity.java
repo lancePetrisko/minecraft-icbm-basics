@@ -99,7 +99,8 @@ public class MissileLauncherBlockEntity extends BlockEntity
 			return;
 		}
 		ItemStack ammo = this.inventory.get(MISSILE_SLOT);
-		if (!this.hasTarget || !ammo.isOf(ModItems.ICBM_MISSILE)) {
+		boolean cruiseMissile = ammo.isOf(ModItems.CRUISE_MISSILE);
+		if (!this.hasTarget || !(ammo.isOf(ModItems.ICBM_MISSILE) || cruiseMissile)) {
 			return;
 		}
 
@@ -115,6 +116,7 @@ public class MissileLauncherBlockEntity extends BlockEntity
 		MissileEntity missile = new MissileEntity(ModEntities.MISSILE, serverWorld);
 		missile.refreshPositionAndAngles(spawnX, spawnY, spawnZ, facing.getPositiveHorizontalDegrees(), 0.0f);
 		missile.setTarget(this.targetX + 0.5, this.targetY, this.targetZ + 0.5);
+		missile.setCruiseMissile(cruiseMissile);
 		serverWorld.spawnEntity(missile);
 
 		// Consume the missile item.
@@ -172,7 +174,7 @@ public class MissileLauncherBlockEntity extends BlockEntity
 	@Override
 	public boolean isValid(int slot, ItemStack stack) {
 		return switch (slot) {
-			case MISSILE_SLOT -> stack.isOf(ModItems.ICBM_MISSILE);
+			case MISSILE_SLOT -> stack.isOf(ModItems.ICBM_MISSILE) || stack.isOf(ModItems.CRUISE_MISSILE);
 			case USB_SLOT -> stack.isOf(ModItems.USB_DRIVE);
 			default -> false;
 		};

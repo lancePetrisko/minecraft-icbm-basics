@@ -93,19 +93,21 @@ public class CiwsBlockEntity extends BlockEntity
 			return;
 		}
 
-		double radiusSq = (double) ICBMBasics.CONFIG.ciwsDetectionRadius * ICBMBasics.CONFIG.ciwsDetectionRadius;
 		double centerX = pos.getX() + 0.5;
 		double centerY = pos.getY() + 0.5;
 		double centerZ = pos.getZ() + 0.5;
 
+		// A missile's own radar cross-section (smaller for cruise missiles)
+		// shrinks the effective detection radius used against it specifically.
 		MissileEntity target = null;
 		double bestDistanceSq = Double.MAX_VALUE;
 		for (MissileEntity missile : MissileEntity.getActiveMissiles(serverWorld)) {
 			if (missile.getFlightAge() <= LAUNCH_ACQUIRE_AGE_TICKS) {
 				continue;
 			}
+			double effectiveRadius = ICBMBasics.CONFIG.ciwsDetectionRadius * missile.getRadarCrossSectionMultiplier();
 			double distanceSq = missile.squaredDistanceTo(centerX, centerY, centerZ);
-			if (distanceSq <= radiusSq && distanceSq < bestDistanceSq) {
+			if (distanceSq <= effectiveRadius * effectiveRadius && distanceSq < bestDistanceSq) {
 				bestDistanceSq = distanceSq;
 				target = missile;
 			}

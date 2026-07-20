@@ -5,6 +5,7 @@ import com.example.icbmbasics.block.ArmoredBlock;
 import com.example.icbmbasics.block.ArmoredDoorBlock;
 import com.example.icbmbasics.block.CiwsBlock;
 import com.example.icbmbasics.block.MissileLauncherBlock;
+import com.example.icbmbasics.block.MonitorBlock;
 import com.example.icbmbasics.block.RadarBlock;
 import com.example.icbmbasics.block.SamSiteBlock;
 
@@ -43,6 +44,8 @@ public final class ModBlocks {
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("ciws"));
 	public static final RegistryKey<Block> WIRE_KEY =
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("wire"));
+	public static final RegistryKey<Block> MONITOR_KEY =
+			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("monitor"));
 
 	public static final Block MISSILE_LAUNCHER = Registry.register(Registries.BLOCK, MISSILE_LAUNCHER_KEY,
 			new MissileLauncherBlock(AbstractBlock.Settings.create()
@@ -149,6 +152,19 @@ public final class ModBlocks {
 			new Block(AbstractBlock.Settings.create()
 					.registryKey(WIRE_KEY)
 					.strength(1.0f, 6.0f)
+					.sounds(BlockSoundGroup.METAL)));
+
+	/**
+	 * A passive wall display - place any number of these adjacent to each
+	 * other, facing the same way, and they act as one big screen (see
+	 * {@code client.render.MonitorBlockEntityRenderer}). Links to a radar the
+	 * same way SAM sites/CIWS do, via {@code WireNetwork}.
+	 */
+	public static final Block MONITOR = Registry.register(Registries.BLOCK, MONITOR_KEY,
+			new MonitorBlock(AbstractBlock.Settings.create()
+					.registryKey(MONITOR_KEY)
+					.strength(2.0f, 10.0f)
+					.requiresTool()
 					.sounds(BlockSoundGroup.METAL)));
 
 	private ModBlocks() {
