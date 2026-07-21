@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1253,
+      "minecraft:walk_one_cm": 359,
+      "minecraft:total_world_time": 1921,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 41479,
+      "minecraft:crouch_one_cm": 9,
+      "minecraft:sneak_time": 87,
+      "minecraft:play_time": 1253,
+      "minecraft:jump": 2,
+      "minecraft:time_since_death": 1253
+    },
+    "minecraft:used": {
+      "icbmbasics:remote_detonator": 1,
+      "icbmbasics:detonator_charge": 1
+    }
+  },
+  "DataVersion": 4671
+}
