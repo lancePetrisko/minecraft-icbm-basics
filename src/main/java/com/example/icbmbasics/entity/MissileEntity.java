@@ -129,7 +129,12 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	 * Destroys this missile mid-flight on a successful intercept (SAM/CIWS).
 	 * Deliberately not {@link #explode(ServerWorld)}: a shootdown is debris, not
 	 * a ground impact, so it skips the crater/armor-damage/explosion-power logic
-	 * entirely and just discards with a small visual/audio flourish.
+	 * entirely - but the payoff still needs to read clearly from a distance,
+	 * since both a SAM interceptor and a CIWS burst discard silently on their
+	 * own hit, leaving this as the only visible/audible confirmation a kill
+	 * happened. {@code EXPLOSION_EMITTER} is the same bright flash particle
+	 * vanilla TNT uses; the white smoke cloud lingers well after the flash
+	 * fades so the kill spot stays visible for a few seconds.
 	 */
 	public void destroyByInterceptor(ServerWorld world) {
 		if (this.isRemoved()) {
@@ -140,9 +145,14 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		double z = this.getZ();
 		this.discard();
 
-		world.spawnParticles(ParticleTypes.EXPLOSION, x, y, z, 1, 0.2, 0.2, 0.2, 0.0);
-		world.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 12, 0.4, 0.4, 0.4, 0.05);
-		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 2.0f, 1.4f);
+		world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, x, y, z, 2, 0.3, 0.3, 0.3, 0.0);
+		world.spawnParticles(ParticleTypes.EXPLOSION, x, y, z, 8, 0.5, 0.5, 0.5, 0.05);
+		world.spawnParticles(ParticleTypes.WHITE_SMOKE, x, y, z, 50, 1.3, 1.3, 1.3, 0.06);
+		world.spawnParticles(ParticleTypes.CLOUD, x, y, z, 35, 1.6, 1.1, 1.6, 0.04);
+		world.spawnParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 20, 0.8, 0.8, 0.8, 0.02);
+
+		world.playSound(null, x, y, z, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 3.0f, 1.1f);
+		world.playSound(null, x, y, z, SoundEvents.ENTITY_FIREWORK_ROCKET_BLAST, SoundCategory.HOSTILE, 2.5f, 0.8f);
 	}
 
 	public void setTarget(double x, double y, double z) {
