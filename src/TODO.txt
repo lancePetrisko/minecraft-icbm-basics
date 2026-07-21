@@ -1,5 +1,16 @@
 TODO File
 
+Ideas:
+Render the counter rockets better. Like if it blows up in the air intercepting a missile add an explosion effect so its very vissible.
+That goes with the ciws too. if the missile explodes when intercepted well make a large white smoke cloud.
+
+Make a remote detonator which can connect to a redstone line that once pressed it will activate a block that serves
+as a redstone blockj that will activate others around it via   redstone from wherever you are in the world
+
+The monitor texture is just too low quality. I a cool looking scanner with missiles in red with a warning saying "MISSILE INCOMING" with the number of blocks away
+a missile is and it actively updating as text under the missile as it comes closer.
+
+Air raid siren which can be activated via redstone
 
 Suggestions (theorycraft, not decided/started):
 

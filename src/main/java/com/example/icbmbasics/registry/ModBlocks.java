@@ -4,6 +4,7 @@ import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.block.ArmoredBlock;
 import com.example.icbmbasics.block.ArmoredDoorBlock;
 import com.example.icbmbasics.block.CiwsBlock;
+import com.example.icbmbasics.block.DetonatorChargeBlock;
 import com.example.icbmbasics.block.MissileLauncherBlock;
 import com.example.icbmbasics.block.MonitorBlock;
 import com.example.icbmbasics.block.RadarBlock;
@@ -46,6 +47,8 @@ public final class ModBlocks {
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("wire"));
 	public static final RegistryKey<Block> MONITOR_KEY =
 			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("monitor"));
+	public static final RegistryKey<Block> DETONATOR_CHARGE_KEY =
+			RegistryKey.of(RegistryKeys.BLOCK, ICBMBasics.id("detonator_charge"));
 
 	public static final Block MISSILE_LAUNCHER = Registry.register(Registries.BLOCK, MISSILE_LAUNCHER_KEY,
 			new MissileLauncherBlock(AbstractBlock.Settings.create()
@@ -164,6 +167,18 @@ public final class ModBlocks {
 			new MonitorBlock(AbstractBlock.Settings.create()
 					.registryKey(MONITOR_KEY)
 					.strength(2.0f, 10.0f)
+					.requiresTool()
+					.sounds(BlockSoundGroup.METAL)));
+
+	/**
+	 * A stationary redstone source fired remotely by a {@code RemoteDetonatorItem}
+	 * bound to it - see {@code DetonatorChargeBlock}. No wire/proximity check,
+	 * unlike SAM sites/CIWS's radar link: it fires from anywhere in the world.
+	 */
+	public static final Block DETONATOR_CHARGE = Registry.register(Registries.BLOCK, DETONATOR_CHARGE_KEY,
+			new DetonatorChargeBlock(AbstractBlock.Settings.create()
+					.registryKey(DETONATOR_CHARGE_KEY)
+					.strength(3.0f, 6.0f)
 					.requiresTool()
 					.sounds(BlockSoundGroup.METAL)));
 

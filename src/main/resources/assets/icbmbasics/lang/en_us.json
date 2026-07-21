@@ -19,6 +19,8 @@
 	"block.icbmbasics.ciws": "CIWS",
 	"block.icbmbasics.wire": "Signal Wire",
 	"block.icbmbasics.monitor": "Monitor",
+	"block.icbmbasics.detonator_charge": "Detonator Charge",
+	"item.icbmbasics.remote_detonator": "Remote Detonator",
 	"entity.icbmbasics.missile": "Missile",
 	"entity.icbmbasics.sam_interceptor": "SAM Interceptor",
 	"entity.icbmbasics.ciws_bullet": "CIWS Round",
@@ -45,5 +47,12 @@
 	"gui.icbmbasics.submit_code": "OK",
 	"gui.icbmbasics.code_set": "Code set.",
 	"gui.icbmbasics.wrong_code": "Wrong code.",
-	"gui.icbmbasics.ammo_count": "Ammo: %s / %s"
+	"gui.icbmbasics.ammo_count": "Ammo: %s / %s",
+	"gui.icbmbasics.flip_cover": "SAFETY",
+	"gui.icbmbasics.detonate": "DETONATE",
+	"gui.icbmbasics.detonator_ready": "Linked and ready.",
+	"gui.icbmbasics.detonator_unlinked": "Not linked to a charge.",
+	"gui.icbmbasics.detonated": "DETONATED!",
+	"gui.icbmbasics.detonation_failed": "Detonation failed - link broken.",
+	"message.icbmbasics.detonator_linked": "Detonator linked to charge at %s, %s, %s."
 }

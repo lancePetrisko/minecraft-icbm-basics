@@ -3,11 +3,13 @@ package com.example.icbmbasics.registry;
 import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.network.AmmoScreenData;
 import com.example.icbmbasics.network.ArmoredDoorScreenData;
+import com.example.icbmbasics.network.DetonatorScreenData;
 import com.example.icbmbasics.network.LauncherScreenData;
 import com.example.icbmbasics.network.RadarScreenData;
 import com.example.icbmbasics.network.UsbDriveScreenData;
 import com.example.icbmbasics.screen.ArmoredDoorScreenHandler;
 import com.example.icbmbasics.screen.CiwsAmmoScreenHandler;
+import com.example.icbmbasics.screen.DetonatorScreenHandler;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
 import com.example.icbmbasics.screen.RadarScreenHandler;
 import com.example.icbmbasics.screen.SamAmmoScreenHandler;
@@ -42,6 +44,10 @@ public final class ModScreenHandlers {
 	public static final ScreenHandlerType<CiwsAmmoScreenHandler> CIWS =
 			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("ciws"),
 					new ExtendedScreenHandlerType<>(CiwsAmmoScreenHandler::new, AmmoScreenData.PACKET_CODEC));
+
+	public static final ScreenHandlerType<DetonatorScreenHandler> DETONATOR =
+			Registry.register(Registries.SCREEN_HANDLER, ICBMBasics.id("detonator"),
+					new ExtendedScreenHandlerType<>(DetonatorScreenHandler::new, DetonatorScreenData.PACKET_CODEC));
 
 	private ModScreenHandlers() {
 	}

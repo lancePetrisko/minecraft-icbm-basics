@@ -3,11 +3,13 @@ package com.example.icbmbasics;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.icbmbasics.block.DetonatorChargeBlock;
 import com.example.icbmbasics.block.entity.ArmoredDoorBlockEntity;
 import com.example.icbmbasics.block.entity.MissileLauncherBlockEntity;
 import com.example.icbmbasics.config.ICBMConfig;
 import com.example.icbmbasics.network.DeleteDriveWaypointPayload;
 import com.example.icbmbasics.network.DeleteLauncherWaypointPayload;
+import com.example.icbmbasics.network.DetonatorResultPayload;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
 import com.example.icbmbasics.network.MonitorUpdatePayload;
@@ -16,6 +18,7 @@ import com.example.icbmbasics.network.SaveDriveWaypointPayload;
 import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
 import com.example.icbmbasics.network.SubmitDoorCodePayload;
+import com.example.icbmbasics.network.TriggerDetonatorPayload;
 import com.example.icbmbasics.network.Waypoint;
 import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModBlocks;
@@ -36,6 +39,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.MathHelper;
 
 import org.slf4j.Logger;
@@ -194,6 +198,35 @@ public class ICBMBasics implements ModInitializer {
 			} else {
 				player.sendMessage(Text.translatable("gui.icbmbasics.wrong_code"), true);
 			}
+		});
+
+		// C2S payload: the remote detonator GUI's covered red button.
+		PayloadTypeRegistry.playC2S().register(TriggerDetonatorPayload.ID, TriggerDetonatorPayload.CODEC);
+		// S2C payload: whether that press actually fired the linked charge block.
+		PayloadTypeRegistry.playS2C().register(DetonatorResultPayload.ID, DetonatorResultPayload.CODEC);
+
+		ServerPlayNetworking.registerGlobalReceiver(TriggerDetonatorPayload.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			if (!(player.getEntityWorld() instanceof ServerWorld playerWorld)) {
+				return;
+			}
+			ItemStack stack = player.getStackInHand(payload.hand());
+			if (!stack.isOf(ModItems.REMOTE_DETONATOR)) {
+				return;
+			}
+
+			boolean success = false;
+			GlobalPos link = stack.get(ModComponents.DETONATOR_LINK);
+			if (link != null) {
+				ServerWorld targetWorld = playerWorld.getServer().getWorld(link.dimension());
+				if (targetWorld != null && targetWorld.isChunkLoaded(link.pos())
+						&& targetWorld.getBlockState(link.pos()).getBlock() instanceof DetonatorChargeBlock chargeBlock) {
+					chargeBlock.trigger(targetWorld, link.pos());
+					success = true;
+				}
+			}
+
+			ServerPlayNetworking.send(player, new DetonatorResultPayload(success));
 		});
 
 		LOGGER.info("ICBM Basics initialized. Explosion power: {}, terrain destruction: {}",

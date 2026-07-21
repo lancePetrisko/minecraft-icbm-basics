@@ -5,10 +5,12 @@ import com.example.icbmbasics.client.render.MonitorBlockEntityRenderer;
 import com.example.icbmbasics.client.render.MonitorRenderData;
 import com.example.icbmbasics.client.screen.ArmoredDoorScreen;
 import com.example.icbmbasics.client.screen.CiwsAmmoScreen;
+import com.example.icbmbasics.client.screen.DetonatorScreen;
 import com.example.icbmbasics.client.screen.MissileLauncherScreen;
 import com.example.icbmbasics.client.screen.RadarScreen;
 import com.example.icbmbasics.client.screen.SamAmmoScreen;
 import com.example.icbmbasics.client.screen.UsbDriveScreen;
+import com.example.icbmbasics.network.DetonatorResultPayload;
 import com.example.icbmbasics.network.DriveWaypointListPayload;
 import com.example.icbmbasics.network.LauncherWaypointListPayload;
 import com.example.icbmbasics.network.MonitorUpdatePayload;
@@ -16,6 +18,7 @@ import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.registry.ModBlockEntities;
 import com.example.icbmbasics.registry.ModEntities;
 import com.example.icbmbasics.registry.ModScreenHandlers;
+import com.example.icbmbasics.screen.DetonatorScreenHandler;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
 import com.example.icbmbasics.screen.RadarScreenHandler;
 import com.example.icbmbasics.screen.UsbDriveScreenHandler;
@@ -25,6 +28,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.text.Text;
 
 public class ICBMBasicsClient implements ClientModInitializer {
 	@Override
@@ -48,6 +52,7 @@ public class ICBMBasicsClient implements ClientModInitializer {
 		HandledScreens.register(ModScreenHandlers.ARMORED_DOOR, ArmoredDoorScreen::new);
 		HandledScreens.register(ModScreenHandlers.SAM_SITE, SamAmmoScreen::new);
 		HandledScreens.register(ModScreenHandlers.CIWS, CiwsAmmoScreen::new);
+		HandledScreens.register(ModScreenHandlers.DETONATOR, DetonatorScreen::new);
 
 		// Monitors are a plain always-on world display, not a GUI - see MonitorBlockEntityRenderer.
 		BlockEntityRendererRegistry.register(ModBlockEntities.MONITOR, MonitorBlockEntityRenderer::new);
@@ -86,5 +91,16 @@ public class ICBMBasicsClient implements ClientModInitializer {
 				context.client().execute(() ->
 						MonitorRenderData.put(payload.monitorPos(), payload.radarPos(),
 								payload.detectionRadius(), payload.contacts())));
+
+		// Shows the detonator GUI's press outcome once the server resolves it.
+		ClientPlayNetworking.registerGlobalReceiver(DetonatorResultPayload.ID, (payload, context) ->
+				context.client().execute(() -> {
+					if (context.player().currentScreenHandler instanceof DetonatorScreenHandler handler) {
+						Text message = payload.success()
+								? Text.translatable("gui.icbmbasics.detonated")
+								: Text.translatable("gui.icbmbasics.detonation_failed");
+						handler.setResultMessage(message.getString());
+					}
+				}));
 	}
 }

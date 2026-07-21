@@ -52,6 +52,15 @@ public class MonitorBlockEntityRenderer implements BlockEntityRenderer<MonitorBl
 	private static final long SWEEP_PERIOD_MS = 4000;
 	private static final float SWEEP_HALF_WIDTH_RAD = 0.12f;
 	private static final float RING_THICKNESS_CELLS = 0.6f;
+	/**
+	 * The monitor deliberately shows a wider view than the radar's actual
+	 * detection radius, so contacts sit closer to the center and the scope
+	 * reads as a grand, zoomed-out display rather than a tight crop on the
+	 * detection edge - the rings/sweep still fill the whole circle, just
+	 * representing more real-world distance per cell than a 1:1 mapping
+	 * would.
+	 */
+	private static final double VIEW_RANGE_MULTIPLIER = 2.5;
 	/** How far the drawn screen plane sits proud of the block's own face, to avoid z-fighting with its model. */
 	private static final double SCREEN_DEPTH = 0.502;
 
@@ -203,7 +212,9 @@ public class MonitorBlockEntityRenderer implements BlockEntityRenderer<MonitorBl
 			}
 
 			if (snapshot != null) {
-				double scale = snapshot.detectionRadius() > 0 ? radius / snapshot.detectionRadius() : 0.0;
+				double scale = snapshot.detectionRadius() > 0
+						? radius / (snapshot.detectionRadius() * VIEW_RANGE_MULTIPLIER)
+						: 0.0;
 				for (RadarContact contact : snapshot.contacts()) {
 					double wx = contact.x() - (snapshot.radarPos().getX() + 0.5);
 					double wz = contact.z() - (snapshot.radarPos().getZ() + 0.5);

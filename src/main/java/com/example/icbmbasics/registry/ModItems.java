@@ -3,6 +3,7 @@ package com.example.icbmbasics.registry;
 import com.example.icbmbasics.ICBMBasics;
 import com.example.icbmbasics.item.ArmorToolItem;
 import com.example.icbmbasics.item.CruiseMissileItem;
+import com.example.icbmbasics.item.RemoteDetonatorItem;
 import com.example.icbmbasics.item.UsbDriveItem;
 
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -51,6 +52,10 @@ public final class ModItems {
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("wire"));
 	public static final RegistryKey<Item> MONITOR_KEY =
 			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("monitor"));
+	public static final RegistryKey<Item> DETONATOR_CHARGE_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("detonator_charge"));
+	public static final RegistryKey<Item> REMOTE_DETONATOR_KEY =
+			RegistryKey.of(RegistryKeys.ITEM, ICBMBasics.id("remote_detonator"));
 
 	/**
 	 * The missile is deliberately a plain {@link Item}: it has no use/placement
@@ -139,6 +144,18 @@ public final class ModItems {
 					.registryKey(MONITOR_KEY)
 					.useBlockPrefixedTranslationKey()));
 
+	public static final Item DETONATOR_CHARGE = Registry.register(Registries.ITEM, DETONATOR_CHARGE_KEY,
+			new BlockItem(ModBlocks.DETONATOR_CHARGE, new Item.Settings()
+					.registryKey(DETONATOR_CHARGE_KEY)
+					.useBlockPrefixedTranslationKey()));
+
+	/**
+	 * Right-click a {@code DetonatorChargeBlock} to bind this stack to it,
+	 * plain right-click anywhere to open its GUI - see {@code RemoteDetonatorItem}.
+	 */
+	public static final Item REMOTE_DETONATOR = Registry.register(Registries.ITEM, REMOTE_DETONATOR_KEY,
+			new RemoteDetonatorItem(new Item.Settings().registryKey(REMOTE_DETONATOR_KEY).maxCount(1)));
+
 	private ModItems() {
 	}
 
@@ -162,6 +179,8 @@ public final class ModItems {
 			entries.add(CIWS_AMMO);
 			entries.add(WIRE);
 			entries.add(MONITOR);
+			entries.add(DETONATOR_CHARGE);
+			entries.add(REMOTE_DETONATOR);
 		});
 	}
 }

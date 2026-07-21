@@ -63,7 +63,7 @@ public class MissileLauncherScreenHandler extends ScreenHandler {
 		this.addSlot(new Slot(inventory, 0, MISSILE_SLOT_X, MISSILE_SLOT_Y) {
 			@Override
 			public boolean canInsert(ItemStack stack) {
-				return stack.isOf(ModItems.ICBM_MISSILE);
+				return stack.isOf(ModItems.ICBM_MISSILE) || stack.isOf(ModItems.CRUISE_MISSILE);
 			}
 		});
 
@@ -137,7 +137,7 @@ public class MissileLauncherScreenHandler extends ScreenHandler {
 				if (!this.insertItem(stack, SLOT_COUNT, this.slots.size(), true)) {
 					return ItemStack.EMPTY;
 				}
-			} else if (stack.isOf(ModItems.ICBM_MISSILE)) {
+			} else if (stack.isOf(ModItems.ICBM_MISSILE) || stack.isOf(ModItems.CRUISE_MISSILE)) {
 				// Player inventory -> missile slot.
 				if (!this.insertItem(stack, 0, 1, false)) {
 					return ItemStack.EMPTY;
