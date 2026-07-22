@@ -1,0 +1,38 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "minecraft:lever": 1,
+      "minecraft:repeater": 2
+    },
+    "minecraft:used": {
+      "minecraft:grass_block": 144,
+      "minecraft:lever": 2,
+      "minecraft:birch_log": 1,
+      "icbmbasics:sam_site": 1,
+      "icbmbasics:detonator_charge": 1,
+      "minecraft:stone": 3,
+      "icbmbasics:monitor": 15,
+      "icbmbasics:radar_mk1": 3,
+      "icbmbasics:remote_detonator": 3,
+      "minecraft:glass_pane": 11,
+      "minecraft:torch": 3,
+      "minecraft:dirt": 20,
+      "minecraft:birch_leaves": 19
+    },
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 45206,
+      "minecraft:open_chest": 3,
+      "minecraft:time_since_rest": 25301,
+      "minecraft:walk_one_cm": 27984,
+      "minecraft:total_world_time": 59895,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 386749,
+      "minecraft:crouch_one_cm": 1592,
+      "minecraft:sneak_time": 1384,
+      "minecraft:play_time": 25301,
+      "minecraft:jump": 290,
+      "minecraft:time_since_death": 25301
+    }
+  },
+  "DataVersion": 4671
+}

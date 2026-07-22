@@ -15,12 +15,14 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ChunkTicketType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
@@ -74,6 +76,17 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	private static final double JUKE_STRENGTH = 1.4;
 	/** How much smaller a cruise missile's effective radar/SAM/CIWS detection radius is, vs. a standard missile's 1.0. */
 	private static final double RADAR_CROSS_SECTION_MULTIPLIER = 0.55;
+	/**
+	 * Chunk-ticket radius (in chunks) kept loaded around the missile so it keeps
+	 * ticking far from any player. Uses vanilla's {@code ENDER_PEARL} ticket type:
+	 * FOR_SIMULATION (entities actually tick, not just chunk-loaded) with a
+	 * 40-tick self-expiry, so tickets clean themselves up behind the flight path
+	 * with no explicit removal needed - even if the missile is intercepted or
+	 * explodes mid-refresh.
+	 */
+	private static final int CHUNK_TICKET_RADIUS = 2;
+	/** How far ahead (in ticks of current velocity) a second ticket pre-loads the upcoming chunk. */
+	private static final int CHUNK_TICKET_LOOKAHEAD_TICKS = 20;
 
 	/**
 	 * All in-flight missiles per server world, so radar blocks can scan without
@@ -215,6 +228,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 			this.checkSamEvasion(serverWorld);
 		}
 		this.updateRotation();
+		this.maintainChunkTickets(serverWorld);
 		this.move(MovementType.SELF, this.getVelocity());
 
 		// Exhaust trail broadcast to all nearby players.
@@ -302,6 +316,25 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		this.setVelocity(dx * speed, vy, dz * speed);
+	}
+
+	/**
+	 * Keeps the missile ticking outside player render/simulation distance by
+	 * refreshing short-lived FOR_SIMULATION chunk tickets every tick: one on the
+	 * current chunk, one on the chunk it'll reach in
+	 * {@link #CHUNK_TICKET_LOOKAHEAD_TICKS}, so the next chunk is already
+	 * simulating before the missile crosses into it (a chunk that only starts
+	 * loading on arrival would leave the missile frozen until it finished).
+	 */
+	private void maintainChunkTickets(ServerWorld world) {
+		ChunkPos current = this.getChunkPos();
+		world.getChunkManager().addTicket(ChunkTicketType.ENDER_PEARL, current, CHUNK_TICKET_RADIUS);
+
+		Vec3d ahead = this.getVelocity().multiply(CHUNK_TICKET_LOOKAHEAD_TICKS);
+		ChunkPos next = new ChunkPos(BlockPos.ofFloored(this.getX() + ahead.x, this.getY() + ahead.y, this.getZ() + ahead.z));
+		if (!next.equals(current)) {
+			world.getChunkManager().addTicket(ChunkTicketType.ENDER_PEARL, next, CHUNK_TICKET_RADIUS);
+		}
 	}
 
 	/**
