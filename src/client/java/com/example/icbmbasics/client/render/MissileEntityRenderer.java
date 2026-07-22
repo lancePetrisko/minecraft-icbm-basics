@@ -47,8 +47,11 @@ public class MissileEntityRenderer<T extends Entity & FlyingItemEntity> extends 
 		matrices.push();
 		matrices.scale(this.scale, this.scale, this.scale);
 		// Nose-along-velocity instead of camera billboard: yaw about world Y,
-		// then pitch about the entity's own (already-yawed) local X.
-		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - state.yaw));
+		// then pitch about the entity's own (already-yawed) local X. Yaw here is
+		// atan2(vx, vz) (see MissileEntity#updateRotation), so 180 + yaw maps the
+		// model's local -Z onto the velocity direction; 180 - yaw x-mirrors the
+		// heading, which a flat sprite hid but a 3D model would not.
+		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f + state.yaw));
 		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(state.pitch));
 		state.itemRenderState.render(matrices, queue, state.light, OverlayTexture.DEFAULT_UV, state.outlineColor);
 		matrices.pop();

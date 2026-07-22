@@ -418,8 +418,18 @@ Resources (`src/main/resources/`):
 - `fabric.mod.json`, `icbmbasics.mixins.json` — mod metadata / mixin config (no mixins yet, just
   the empty config).
 - `assets/icbmbasics/lang/en_us.json` — all GUI/translatable strings.
-- `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. No new textures
-  drawn for radar or armor yet — everything reuses the existing `missile_launcher_*`/`usb_drive`
+- `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. The ICBM missile
+  now has a real 3D model: `models/item/icbm_missile.json` is a Blockbench-authored elements
+  model (texture `textures/item/missile.png`, 64x64) — the Blockbench export had 8 elements with
+  free-form `"y": -90` rotations, which vanilla's model format can't parse (only ±45/±22.5/0 via
+  angle/axis), so those were baked into the geometry by hand (coords rotated, N/E/S/W faces
+  cycled, up/down faces given `"rotation": 90`/`270`). Its `display.ground` entry rotates the
+  model `[-90, 0, 0]` because `MissileEntityRenderer` renders with `ItemDisplayContext.GROUND`
+  and expects the nose along local -Z, while the model is built nose-up (+Y) — don't remove that
+  display entry or the flying missile renders sideways. `models/item/cruise_missile.json` is now
+  just `"parent": "icbmbasics:item/icbm_missile"`, so both missiles share the 3D model. The old
+  flat `textures/item/icbm_missile.png` sprite still exists (other placeholders may reference
+  it). No new textures drawn for radar or armor yet — everything reuses the existing `missile_launcher_*`/`usb_drive`
   PNGs as placeholders (the user is drawing real art later); only the JSON models/blockstates are
   real. The armored block tiers each have 4 model files (`armored_block_mk{n}_{0..3}`, one per
   `armor_damage` stage) wired through a `variants` blockstate keyed on that property alone — the
