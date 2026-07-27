@@ -1,0 +1,23 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "icbmbasics:usb_drive": 1,
+      "icbmbasics:cruise_missile": 7
+    },
+    "minecraft:used": {
+      "icbmbasics:missile_launcher": 1
+    },
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 747,
+      "minecraft:time_since_rest": 1154,
+      "minecraft:walk_one_cm": 2646,
+      "minecraft:total_world_time": 2129,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 439,
+      "minecraft:play_time": 1154,
+      "minecraft:jump": 8,
+      "minecraft:time_since_death": 1154
+    }
+  },
+  "DataVersion": 4671
+}
