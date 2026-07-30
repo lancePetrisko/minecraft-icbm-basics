@@ -1,6 +1,6 @@
 {
 	"parent": "minecraft:item/generated",
 	"textures": {
-		"layer0": "icbmbasics:item/icbm_missile"
+		"layer0": "icbmbasics:item/ciws_ammo"
 	}
 }

@@ -68,6 +68,8 @@ public final class ModBlocks {
 					.registryKey(RADAR_MK1_KEY)
 					.strength(3.5f, 8.0f)
 					.requiresTool()
+					// its model is a mast, not a full cube - same reason as CIWS below
+					.nonOpaque()
 					.sounds(BlockSoundGroup.METAL), 1));
 
 	/**

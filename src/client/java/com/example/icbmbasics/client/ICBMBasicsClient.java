@@ -3,6 +3,7 @@ package com.example.icbmbasics.client;
 import com.example.icbmbasics.client.render.MissileEntityRenderer;
 import com.example.icbmbasics.client.render.MonitorBlockEntityRenderer;
 import com.example.icbmbasics.client.render.MonitorRenderData;
+import com.example.icbmbasics.client.render.RadarDishBlockEntityRenderer;
 import com.example.icbmbasics.client.screen.ArmoredDoorScreen;
 import com.example.icbmbasics.client.screen.CiwsAmmoScreen;
 import com.example.icbmbasics.client.screen.DetonatorScreen;
@@ -56,6 +57,8 @@ public class ICBMBasicsClient implements ClientModInitializer {
 
 		// Monitors are a plain always-on world display, not a GUI - see MonitorBlockEntityRenderer.
 		BlockEntityRendererRegistry.register(ModBlockEntities.MONITOR, MonitorBlockEntityRenderer::new);
+		// The radar's dish spins, which a static block model can't do - see RadarDishBlockEntityRenderer.
+		BlockEntityRendererRegistry.register(ModBlockEntities.RADAR, RadarDishBlockEntityRenderer::new);
 
 		// Refreshes the open launcher GUI's own waypoint list after a save/delete.
 		// The slotted drive's list needs no such payload - it rides along on the

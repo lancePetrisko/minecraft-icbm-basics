@@ -383,6 +383,28 @@ Client-only (`src/client/java/com/example/icbmbasics/client/`):
   `Map<BlockPos, Snapshot>` populated by the `MonitorUpdatePayload` receiver in
   `ICBMBasicsClient`, with a `STALE_MILLIS` (3000) cutoff so an unlinked/out-of-range monitor
   goes blank instead of showing a frozen last frame forever.
+- `render/RadarDishRenderState.java` + `render/RadarDishBlockEntityRenderer.java` — the radar's
+  **spinning parabolic dish**, drawn on top of the static mast in `models/block/radar_mk1.json`.
+  Two reasons it can't live in that JSON: a vanilla block model can't animate, and it can't
+  express a paraboloid either (axis-aligned boxes at a handful of legal rotations only). So the
+  block model is just base + pedestal + turntable + mast — **deliberately rotationally
+  symmetric**, since the dish spins around it and anything asymmetric there would visibly
+  disagree with the dish's heading half the time. The dish itself is `SECTORS`(16)×`RINGS`(4)
+  quads over `y = DISH_DEPTH * (r/DISH_RADIUS)²`, emitted as a concave shell plus a
+  `SHELL`-offset convex backing shell **wound the opposite way**, plus a rim joining them — that
+  makes it solid from every angle without depending on the render layer's cull mode. A feed horn
+  sits at the paraboloid's actual focus (`f = R²/(4·depth)`). `DISH_RADIUS` (0.42) has to stay
+  under 0.5 or the rim sweeps outside the block and clips whatever is built next to the radar.
+  Spin is `System.currentTimeMillis() % SPIN_PERIOD_MS` (12 s/rev), same wall-clock trick as
+  `RadarScreen`/`MonitorBlockEntityRenderer`'s sweeps — no state sync, and it keeps turning
+  regardless of `RadarBlockEntity.viewers` (that gate governs contact scanning only). The one
+  field on the render state is a per-`BlockPos` `phaseDegrees` offset, so a row of radars doesn't
+  sweep in lockstep and read as a single mechanism. Uses the same
+  `submitCustom(..., RenderLayers.debugQuads(), ...)` untextured path as the monitor wall; **that
+  layer is unlit**, so shading is faked per quad — each quad's color is scaled by its own normal
+  against a fixed `LIGHT`, with the normal pushed through the same tilt-then-spin the matrix
+  stack applies (`toWorld`) so the highlight stays put in the world instead of rotating with the
+  dish.
 - `screen/RadarScreen.java` — `HandledScreen<RadarScreenHandler>`, no slots. Custom-drawn circular
   scope: a scanline-filled dark circle, a rotating sweep line driven by wall-clock time
   (`System.currentTimeMillis() % SWEEP_PERIOD_MS`, purely decorative/client-side — doesn't need
@@ -442,9 +464,32 @@ Resources (`src/main/resources/`):
   `"parent": "icbmbasics:item/icbm_missile"`, so both missiles share the 3D model. The older
   `textures/item/missile.png` (64x64, for the previous model) and the flat
   `textures/item/icbm_missile.png` sprite both still exist — the flat one is still referenced by
-  `sam_ammo`/`ciws_ammo`; `missile.png` is now unreferenced but kept. No new textures drawn for radar or armor yet — everything reuses the existing `missile_launcher_*`/`usb_drive`
-  PNGs as placeholders (the user is drawing real art later); only the JSON models/blockstates are
-  real. The armored block tiers each have 4 model files (`armored_block_mk{n}_{0..3}`, one per
+  `sam_ammo`/`ciws_ammo`; `missile.png` is now unreferenced but kept. **CIWS and radar now have
+  real models + textures**, not placeholders: `models/block/ciws.json` is a 24-element Phalanx
+  turret (pedestal, octagonal ammo drum, stepped white radome, forward 6-barrel Vulcan) on
+  `textures/block/ciws.png`, and `models/block/radar_mk1.json` + `models/item/radar_mk1.json` are
+  the radar mast/dish on `textures/block/radar_mk1.png`. All three textures are **generated, not
+  drawn** — see the `scratchpad/ciws.py`/`radar.py` pattern: a 32x32 PNG laid out as a 4x4 grid of
+  8px flat-color patches (uv space is always 0..16, so one 8px patch is 4 uv units, and a face
+  whose `uv` rect stays inside one patch gets a flat color), so the models are all "textured"
+  without any pixel art. Swap in real art later by repainting the patches, no model edits needed.
+  Two gotchas both blocks needed:
+  (1) **A non-cube block model needs `.nonOpaque()` on the block's `Settings`** — otherwise the
+  block is treated as solid, neighbours cull their faces against it, and you see straight through
+  the gaps around the pedestal/mast.
+  (2) **In this MC version a block item needs an `assets/icbmbasics/items/<id>.json` definition**
+  (`{"model": {"type": "minecraft:model", "model": "..."}}`) or it has no item model at all.
+  Only 5 exist so far (`icbm_missile`, `cruise_missile`, `missile_launcher`, `usb_drive`, plus the
+  two added here) — **the other ~15 registered items still have none** and render as missing
+  models in inventory. Worth fixing in bulk sometime.
+  Radar is the one case where block and item models deliberately **differ**: block-entity
+  renderers don't run for items, so `models/item/radar_mk1.json` carries a static stepped
+  stand-in dish (tilted 22.5°, no octagon copies — an element gets only one rotation in vanilla's
+  format and the tilt is the one that matters) while `models/block/radar_mk1.json` has no dish at
+  all, since `RadarDishBlockEntityRenderer` draws the real spinning one in world.
+  No new textures drawn for armor yet — those still reuse the existing `missile_launcher_*`/
+  `usb_drive` PNGs as placeholders (the user is drawing real art later); only the JSON
+  models/blockstates are real. The armored block tiers each have 4 model files (`armored_block_mk{n}_{0..3}`, one per
   `armor_damage` stage) wired through a `variants` blockstate keyed on that property alone — the
   door tiers **don't** split by damage stage (facing × half × hinge × open is already 32 variants
   per vanilla's own door blockstate convention; ×4 damage stages was excessive boilerplate for
@@ -455,7 +500,11 @@ Resources (`src/main/resources/`):
   armor tiers (block + door × 3, escalating iron → diamond → netherite), the armor tool, the SAM
   site + CIWS blocks, their ammo items (`sam_ammo`, `ciws_ammo`), the wire block, the monitor
   block, and the cruise missile. SAM/CIWS/wire/monitor all reuse `missile_launcher_side` as a
-  placeholder texture (same deal as radar/armor); the two ammo items and the cruise missile reuse
+  placeholder texture (same deal as radar/armor). `ciws_ammo` has its own real 16x16 sprite now
+  (`textures/item/ciws_ammo.png`, a linked 20mm belt — generated by hand-placed pixels, see
+  `scratchpad/belt.py`; the steel clip band crossing every case is what makes it read as a belt
+  rather than loose cartridges, and the 1px connectors only work because they join clip to clip at
+  the same height). `sam_ammo` and the cruise missile still reuse
   the `icbm_missile` item texture rather than getting their own — the cruise missile's only
   meaningful difference from the plain missile item is its tooltip
   (`item.icbmbasics.cruise_missile.tooltip`), not its appearance.
