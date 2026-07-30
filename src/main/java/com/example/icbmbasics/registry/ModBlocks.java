@@ -144,6 +144,10 @@ public final class ModBlocks {
 					.registryKey(CIWS_KEY)
 					.strength(4.0f, 20.0f)
 					.requiresTool()
+					// its model is a turret, not a full cube - without this the block is
+					// treated as solid, so neighbours cull their faces against it and you
+					// see straight through the gaps around the pedestal
+					.nonOpaque()
 					.sounds(BlockSoundGroup.METAL)));
 
 	/**

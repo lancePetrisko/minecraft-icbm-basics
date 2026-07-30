@@ -1,0 +1,31 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "icbmbasics:missile_launcher": 4,
+      "minecraft:dirt": 2
+    },
+    "minecraft:picked_up": {
+      "icbmbasics:usb_drive": 1,
+      "icbmbasics:cruise_missile": 9,
+      "icbmbasics:icbm_missile": 1
+    },
+    "minecraft:custom": {
+      "minecraft:sprint_one_cm": 1496,
+      "minecraft:time_since_rest": 4016,
+      "minecraft:walk_one_cm": 6625,
+      "minecraft:total_world_time": 4064,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 7117,
+      "minecraft:sneak_time": 4,
+      "minecraft:play_time": 4016,
+      "minecraft:jump": 15,
+      "minecraft:time_since_death": 4016,
+      "minecraft:drop": 3
+    },
+    "minecraft:dropped": {
+      "icbmbasics:cruise_missile": 2,
+      "icbmbasics:icbm_missile": 1
+    }
+  },
+  "DataVersion": 4671
+}

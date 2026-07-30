@@ -420,16 +420,29 @@ Resources (`src/main/resources/`):
 - `assets/icbmbasics/lang/en_us.json` — all GUI/translatable strings.
 - `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. The ICBM missile
   now has a real 3D model: `models/item/icbm_missile.json` is a Blockbench-authored elements
-  model (texture `textures/item/missile.png`, 64x64) — the Blockbench export had 8 elements with
-  free-form `"y": -90` rotations, which vanilla's model format can't parse (only ±45/±22.5/0 via
-  angle/axis), so those were baked into the geometry by hand (coords rotated, N/E/S/W faces
-  cycled, up/down faces given `"rotation": 90`/`270`). Its `display.ground` entry rotates the
-  model `[-90, 0, 0]` because `MissileEntityRenderer` renders with `ItemDisplayContext.GROUND`
-  and expects the nose along local -Z, while the model is built nose-up (+Y) — don't remove that
-  display entry or the flying missile renders sideways. `models/item/cruise_missile.json` is now
-  just `"parent": "icbmbasics:item/icbm_missile"`, so both missiles share the 3D model. The old
-  flat `textures/item/icbm_missile.png` sprite still exists (other placeholders may reference
-  it). No new textures drawn for radar or armor yet — everything reuses the existing `missile_launcher_*`/`usb_drive`
+  model (texture `textures/item/missile2.png`, 16x16 — 6 elements: body, booster, 4 fins). It's a
+  **baked** copy of the author's working file (`~/Documents/missile2.json`), not a straight import:
+  Blockbench exports element rotations in its own per-axis form (`{"x":0,"y":0,"z":90,...}`) and
+  vanilla only parses `{"angle": ±45/±22.5/0, "axis": ...}`, so the 4 fins' `z: 90` rotations were
+  baked into the geometry. **The bake recipe for a `+90` about Z** (right-hand rule, matching
+  `BakedQuadFactory`): coords `(x,y) -> (-dy, dx)` about the element's rotation origin; faces cycle
+  `east->up`, `up->west`, `west->down`, `down->east` (all four carry their old `uv` verbatim plus
+  `"rotation": 270`); `north` keeps its `uv` plus `"rotation": 90` and `south` plus
+  `"rotation": 270`. (An earlier model version needed the same treatment for `y: -90`.) Its
+  `display.ground` entry rotates the model `[-90, 0, 0]` because `MissileEntityRenderer` renders
+  with `ItemDisplayContext.GROUND` and expects the nose along local -Z, while the model is built
+  nose-up (+Y) — don't remove that display entry or the flying missile renders sideways. Every
+  `display` entry's `translation`/`scale` is **derived, not hand-tuned**: they were carried over
+  from the previous (23-units-tall) model and rescaled to keep the same on-screen size and centering
+  for this smaller (8-units-tall) one, via `v = t/16 + R*S*(c/16 - 0.5)` (bbox center `c`, display
+  rotation `R`, scale `S`) solved for the new `t` — that's why `ground.translation.z` is negative
+  now (it cancels the model's own bbox offset after the -90 rotation) and why every scale is the
+  old one times `23/8`. If the model's bbox changes again, redo that arithmetic rather than nudging
+  numbers by eye. `models/item/cruise_missile.json` is just
+  `"parent": "icbmbasics:item/icbm_missile"`, so both missiles share the 3D model. The older
+  `textures/item/missile.png` (64x64, for the previous model) and the flat
+  `textures/item/icbm_missile.png` sprite both still exist — the flat one is still referenced by
+  `sam_ammo`/`ciws_ammo`; `missile.png` is now unreferenced but kept. No new textures drawn for radar or armor yet — everything reuses the existing `missile_launcher_*`/`usb_drive`
   PNGs as placeholders (the user is drawing real art later); only the JSON models/blockstates are
   real. The armored block tiers each have 4 model files (`armored_block_mk{n}_{0..3}`, one per
   `armor_damage` stage) wired through a `variants` blockstate keyed on that property alone — the

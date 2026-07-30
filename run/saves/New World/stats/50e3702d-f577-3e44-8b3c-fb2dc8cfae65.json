@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "minecraft:used": {
+      "icbmbasics:ciws": 1,
+      "icbmbasics:radar_mk1": 1
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 2337,
+      "minecraft:walk_one_cm": 4747,
+      "minecraft:total_world_time": 2382,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 347,
+      "minecraft:crouch_one_cm": 1111,
+      "minecraft:sneak_time": 272,
+      "minecraft:play_time": 2337,
+      "minecraft:jump": 12,
+      "minecraft:time_since_death": 2337
+    }
+  },
+  "DataVersion": 4671
+}
