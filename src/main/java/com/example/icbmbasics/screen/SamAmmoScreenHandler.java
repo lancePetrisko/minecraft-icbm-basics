@@ -1,5 +1,6 @@
 package com.example.icbmbasics.screen;
 
+import com.example.icbmbasics.block.entity.SamSiteBlockEntity;
 import com.example.icbmbasics.network.AmmoScreenData;
 import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.registry.ModScreenHandlers;
@@ -13,13 +14,16 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.math.BlockPos;
 
-/** A single {@code SAM_AMMO} slot plus the player's own inventory - just enough to see/refill ammo. */
+/** One {@code SAM_AMMO} slot per launch tube plus the player's own inventory - just enough to see/refill ammo. */
 public class SamAmmoScreenHandler extends ScreenHandler {
-	public static final int AMMO_SLOT_X = 79;
+	/** Left edge of the first ammo slot - the row of {@link #SLOT_COUNT} is centered in the 176px panel. */
+	public static final int AMMO_SLOT_X = 35;
 	public static final int AMMO_SLOT_Y = 24;
+	/** Vanilla slot pitch - the ammo row is pinned to it like any other slot grid. */
+	public static final int SLOT_SPACING = 18;
 	public static final int PLAYER_INV_Y = 51;
 
-	private static final int SLOT_COUNT = 1;
+	public static final int SLOT_COUNT = SamSiteBlockEntity.SLOT_COUNT;
 
 	private final Inventory inventory;
 	private final BlockPos sitePos;
@@ -35,12 +39,14 @@ public class SamAmmoScreenHandler extends ScreenHandler {
 		this.inventory = inventory;
 		this.sitePos = pos;
 
-		this.addSlot(new Slot(inventory, 0, AMMO_SLOT_X, AMMO_SLOT_Y) {
-			@Override
-			public boolean canInsert(ItemStack stack) {
-				return stack.isOf(ModItems.SAM_AMMO);
-			}
-		});
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			this.addSlot(new Slot(inventory, slot, AMMO_SLOT_X + slot * SLOT_SPACING, AMMO_SLOT_Y) {
+				@Override
+				public boolean canInsert(ItemStack stack) {
+					return stack.isOf(ModItems.SAM_AMMO);
+				}
+			});
+		}
 
 		this.addPlayerSlots(playerInventory, 8, PLAYER_INV_Y);
 	}

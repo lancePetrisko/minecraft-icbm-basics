@@ -116,8 +116,9 @@ public final class ModItems {
 	public static final Item ARMOR_TOOL = Registry.register(Registries.ITEM, ARMOR_TOOL_KEY,
 			new ArmorToolItem(new Item.Settings().registryKey(ARMOR_TOOL_KEY).maxCount(1)));
 
+	/** TallBlockItem, not BlockItem - the SAM site is two blocks tall, same as the armored doors. */
 	public static final Item SAM_SITE = Registry.register(Registries.ITEM, SAM_SITE_KEY,
-			new BlockItem(ModBlocks.SAM_SITE, new Item.Settings()
+			new TallBlockItem(ModBlocks.SAM_SITE, new Item.Settings()
 					.registryKey(SAM_SITE_KEY)
 					.useBlockPrefixedTranslationKey()));
 

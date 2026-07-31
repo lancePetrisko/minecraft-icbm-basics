@@ -32,8 +32,21 @@ import java.util.UUID;
 public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 	private static final double HIT_DISTANCE_SQ = 3.0 * 3.0;
 	private static final int MAX_FLIGHT_TICKS = 20 * 20;
+	/**
+	 * Ticks spent flying straight out of the launch tube before homing takes
+	 * over. Without it, homing overwrites the velocity on the very first tick
+	 * and the rocket appears to turn inside the rack.
+	 */
+	private static final int BOOST_TICKS = 3;
 
 	private UUID targetId;
+	/**
+	 * Unit vector along the tube this was fired from, or null for an
+	 * interceptor that homes immediately. Deliberately not persisted - the
+	 * boost is three ticks long, so a chunk reload inside that window just
+	 * starts homing a hair early, which isn't worth an NBT field.
+	 */
+	private Vec3d boostDirection;
 
 	public SamInterceptorEntity(EntityType<? extends SamInterceptorEntity> type, World world) {
 		super(type, world);
@@ -42,6 +55,12 @@ public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 
 	public void setTarget(MissileEntity target) {
 		this.targetId = target.getUuid();
+	}
+
+	/** Fires this interceptor along its tube's axis for {@link #BOOST_TICKS} before it starts homing. */
+	public void boostFrom(Vec3d direction) {
+		this.boostDirection = direction.normalize();
+		this.setVelocity(this.boostDirection.multiply(ICBMBasics.CONFIG.samInterceptorSpeed));
 	}
 
 	/** The missile UUID this interceptor is homing on - used by {@code MissileEntity} to notice it's being chased and juke. */
@@ -93,6 +112,13 @@ public class SamInterceptorEntity extends Entity implements FlyingItemEntity {
 		if (target == null) {
 			// Target already resolved (impacted/intercepted) - nothing left to chase.
 			this.discard();
+			return;
+		}
+
+		if (this.boostDirection != null && this.age < BOOST_TICKS) {
+			this.move(MovementType.SELF, this.getVelocity());
+			serverWorld.spawnParticles(ParticleTypes.SMOKE, this.getX(), this.getY(), this.getZ(),
+					3, 0.05, 0.05, 0.05, 0.01);
 			return;
 		}
 

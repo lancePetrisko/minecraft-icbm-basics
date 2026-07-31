@@ -127,13 +127,18 @@ public final class ModBlocks {
 	/**
 	 * Ground-to-air defense. Auto-fires homing interceptors at missiles within
 	 * range (see {@code SamSiteBlockEntity}); not 100% accurate
-	 * ({@code ICBMConfig.samAccuracy}). No GUI - fire-and-forget.
+	 * ({@code ICBMConfig.samAccuracy}). Two blocks tall - base plinth plus a
+	 * tilted 6-tube rack, see {@code SamSiteBlock}.
 	 */
 	public static final Block SAM_SITE = Registry.register(Registries.BLOCK, SAM_SITE_KEY,
 			new SamSiteBlock(AbstractBlock.Settings.create()
 					.registryKey(SAM_SITE_KEY)
 					.strength(4.0f, 20.0f)
 					.requiresTool()
+					// its model is a plinth and a tube rack, not a full cube - without
+					// this the block counts as solid, so neighbours cull their faces
+					// against it and you see straight through the gaps
+					.nonOpaque()
 					.sounds(BlockSoundGroup.METAL)));
 
 	/**

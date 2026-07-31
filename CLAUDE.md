@@ -169,8 +169,20 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   gained `updateRotation()` (called each tick after velocity), setting yaw/pitch from the
   velocity vector so the entity visibly orients along its flight path — see the client
   `MissileEntityRenderer` note below for why that alone wasn't enough.
-- `block/SamSiteBlock.java` + `block/entity/SamSiteBlockEntity.java` — non-directional like
-  radar, no GUI on the block itself beyond the ammo slot's own screen. Every
+- `block/SamSiteBlock.java` + `block/entity/SamSiteBlockEntity.java` — **two blocks tall and
+  directional**, unlike radar/CIWS: a base plinth (`HALF=LOWER`, owns the block entity) under a
+  6-tube rack (`HALF=UPPER`, purely visual, `createBlockEntity` returns `null` for it) that tilts
+  22.5° toward `FACING`. Uses `Properties.DOUBLE_BLOCK_HALF`/`HORIZONTAL_FACING`; the item is a
+  `TallBlockItem`. `ArmoredDoorBlock` is the shape precedent but *not* the implementation one —
+  that block gets two-tall placement free from vanilla `DoorBlock`, whereas this extends
+  `BlockWithEntity`, so `getPlacementState`/`onPlaced`/`canPlaceAt`/`getStateForNeighborUpdate`
+  (removes the orphaned half) and the creative-break double-drop guard in `onBreak` are all
+  written out here. Two gotchas worth keeping: `getTicker` must return `null` for the UPPER half
+  (no block entity to tick), and **`canPlaceAt` is deliberately asymmetric** — UPPER requires a
+  LOWER below it, LOWER does *not* require an UPPER, because sites placed while this was still a
+  one-block block exist in saves as lone lower halves and would all pop on chunk load otherwise
+  (those read back as the default state, i.e. `LOWER`/`NORTH`, which is exactly right). Every
+  `SCAN_INTERVAL_TICKS` (10) it picks the nearest missile within `samDetectionRadius` (same
   `SCAN_INTERVAL_TICKS` (10) it picks the nearest missile within `samDetectionRadius` (same
   "ignore anything younger than `LAUNCH_ACQUIRE_AGE_TICKS`" rule as radar, so it doesn't shoot
   its own base's outgoing missile off the pad, and the same per-missile
@@ -182,10 +194,19 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   `SamInterceptorEntity.remove(RemovalReason)` (same "single override beats releasing at every
   `discard()` call site" reasoning as `MissileEntity`'s own active-registry cleanup) whenever
   that interceptor resolves, however it resolves (hit, miss, lost target, timeout). No two sites
-  will ever fire on the same missile at once. Implements `Inventory` (single `SAM_AMMO` slot,
-  `AMMO_SLOT = 0`) + `ExtendedScreenHandlerFactory<AmmoScreenData>` — see the ammo-GUI note below.
-  Only fires while `WireNetwork.isConnectedToRadar` finds a path to a radar; ammo-empty and
-  disconnected are both silent no-ops, not errors.
+  will ever fire on the same missile at once. Implements `Inventory` (`SLOT_COUNT = 6` `SAM_AMMO`
+  slots, **one per launch tube** — `nextTube` cycles them round-robin and skips a tube whose own
+  slot is empty) + `ExtendedScreenHandlerFactory<AmmoScreenData>` — see the ammo-GUI note below.
+  Only fires while `WireNetwork.isConnectedToRadar` finds a path to a radar — checked at **both**
+  `pos` and `pos.up()`, since wire butted against the tube rack is as much a connection as wire
+  against the base, and the block entity only lives on the lower half; ammo-empty and
+  disconnected are both silent no-ops, not errors. `muzzlePosition` spawns the interceptor at the
+  actual muzzle of the tube it came from rather than at the block center: it re-applies the rack
+  model's own element rotation (`-22.5°` about X at `PIVOT_Y`/`PIVOT_Z`) to the tube's authored
+  position and maps that out of the model's north-facing frame via `FACING`. **The constants there
+  are the same numbers `models/block/sam_site_upper.json` is generated from — change the model's
+  tube layout and these must move with it**, which is why the geometry is derived rather than
+  measured off the rendered result.
 - `entity/SamInterceptorEntity.java` — homes on its target by **UUID**, re-resolved fresh every
   tick via `MissileEntity.getActiveMissiles(world)` rather than held as a direct reference, so a
   target that resolves mid-flight (already intercepted, already impacted) is handled cleanly —
@@ -195,6 +216,11 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   public getter added for `MissileEntity`'s own use) exposes which missile UUID it's chasing —
   this is how a cruise missile notices an interceptor is homing on *it specifically* for its
   one-time evasion juke, without either class needing a shared registry beyond this getter.
+  `boostFrom(Vec3d)` gives it a `BOOST_TICKS` (3) head start straight along its launch tube's
+  axis before homing engages — without it, homing overwrites the velocity on the very first tick
+  and the rocket visibly turns while still inside the rack. `boostDirection` is deliberately
+  **not** persisted: three ticks isn't worth an NBT field, and a chunk reload inside that window
+  just starts homing a hair early.
 - `block/CiwsBlock.java` + `block/entity/CiwsBlockEntity.java` — same non-directional/wired-to-
   radar/ammo-GUI shape as the SAM site (including the same per-missile
   `MissileEntity.getRadarCrossSectionMultiplier()` scaling on its target-selection distance

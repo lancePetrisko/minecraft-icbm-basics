@@ -9,8 +9,10 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
 /**
- * Just the SAM site's ammo slot plus a plainly-drawn "Ammo: X / Y" readout,
- * so the count is visible at a glance and not just implied by the item icon.
+ * The SAM site's ammo slots - one per launch tube on the rack, in the same
+ * left-to-right order the site cycles them - plus a plainly-drawn
+ * "Ammo: X / Y" readout of the whole rack, so the count is visible at a glance
+ * and not just implied by the item icons.
  */
 public class SamAmmoScreen extends HandledScreen<SamAmmoScreenHandler> {
 	private static final int PANEL_COLOR = 0xFFC6C6C6;
@@ -40,9 +42,12 @@ public class SamAmmoScreen extends HandledScreen<SamAmmoScreenHandler> {
 		context.fill(left, top, right, top + 1, PANEL_BORDER_LIGHT);
 		context.fill(left, top, left + 1, bottom, PANEL_BORDER_LIGHT);
 
-		int slotX = left + SamAmmoScreenHandler.AMMO_SLOT_X - 1;
 		int slotY = top + SamAmmoScreenHandler.AMMO_SLOT_Y - 1;
-		context.fill(slotX, slotY, slotX + 18, slotY + 18, SLOT_COLOR);
+		for (int slot = 0; slot < SamAmmoScreenHandler.SLOT_COUNT; slot++) {
+			int slotX = left + SamAmmoScreenHandler.AMMO_SLOT_X - 1
+					+ slot * SamAmmoScreenHandler.SLOT_SPACING;
+			context.fill(slotX, slotY, slotX + 18, slotY + 18, SLOT_COLOR);
+		}
 
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 9; col++) {
@@ -62,10 +67,16 @@ public class SamAmmoScreen extends HandledScreen<SamAmmoScreenHandler> {
 	protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
 		context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, LABEL_COLOR, false);
 
-		int count = this.handler.getSlot(0).getStack().getCount();
+		// Whole rack, not just the first tube - the readout tracks total rockets
+		// loaded across every ammo slot.
+		int count = 0;
+		for (int slot = 0; slot < SamAmmoScreenHandler.SLOT_COUNT; slot++) {
+			count += this.handler.getSlot(slot).getStack().getCount();
+		}
+		int capacity = ModItems.SAM_AMMO.getMaxCount() * SamAmmoScreenHandler.SLOT_COUNT;
 		context.drawText(this.textRenderer,
-				Text.translatable("gui.icbmbasics.ammo_count", count, ModItems.SAM_AMMO.getMaxCount()),
-				this.backgroundWidth - 80, COUNT_LABEL_Y, LABEL_COLOR, false);
+				Text.translatable("gui.icbmbasics.ammo_count", count, capacity),
+				this.backgroundWidth - 86, COUNT_LABEL_Y, LABEL_COLOR, false);
 	}
 
 	@Override
