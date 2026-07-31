@@ -40,9 +40,12 @@ public class CiwsAmmoScreen extends HandledScreen<CiwsAmmoScreenHandler> {
 		context.fill(left, top, right, top + 1, PANEL_BORDER_LIGHT);
 		context.fill(left, top, left + 1, bottom, PANEL_BORDER_LIGHT);
 
-		int slotX = left + CiwsAmmoScreenHandler.AMMO_SLOT_X - 1;
 		int slotY = top + CiwsAmmoScreenHandler.AMMO_SLOT_Y - 1;
-		context.fill(slotX, slotY, slotX + 18, slotY + 18, SLOT_COLOR);
+		for (int slot = 0; slot < CiwsAmmoScreenHandler.SLOT_COUNT; slot++) {
+			int slotX = left + CiwsAmmoScreenHandler.AMMO_SLOT_X - 1
+					+ slot * CiwsAmmoScreenHandler.SLOT_SPACING;
+			context.fill(slotX, slotY, slotX + 18, slotY + 18, SLOT_COLOR);
+		}
 
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 9; col++) {
@@ -62,10 +65,16 @@ public class CiwsAmmoScreen extends HandledScreen<CiwsAmmoScreenHandler> {
 	protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
 		context.drawText(this.textRenderer, this.title, this.titleX, this.titleY, LABEL_COLOR, false);
 
-		int count = this.handler.getSlot(0).getStack().getCount();
+		// Whole magazine, not just the first slot - the readout tracks total
+		// rounds loaded across every ammo slot.
+		int count = 0;
+		for (int slot = 0; slot < CiwsAmmoScreenHandler.SLOT_COUNT; slot++) {
+			count += this.handler.getSlot(slot).getStack().getCount();
+		}
+		int capacity = ModItems.CIWS_AMMO.getMaxCount() * CiwsAmmoScreenHandler.SLOT_COUNT;
 		context.drawText(this.textRenderer,
-				Text.translatable("gui.icbmbasics.ammo_count", count, ModItems.CIWS_AMMO.getMaxCount()),
-				this.backgroundWidth - 80, COUNT_LABEL_Y, LABEL_COLOR, false);
+				Text.translatable("gui.icbmbasics.ammo_count", count, capacity),
+				this.backgroundWidth - 86, COUNT_LABEL_Y, LABEL_COLOR, false);
 	}
 
 	@Override

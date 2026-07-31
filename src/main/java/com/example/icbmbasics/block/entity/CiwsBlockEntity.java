@@ -47,9 +47,10 @@ import org.jetbrains.annotations.Nullable;
  * round is marked as the one that actually lands, and it only resolves the
  * hit once it visually arrives, not the instant the burst fires.
  *
- * <p>Single-slot {@link Inventory} for {@code ICBM_BASICS.CIWS_AMMO} - hopper
- * fed, or right-click opens a small GUI (just the slot + player inventory) to
- * see/refill the count.
+ * <p>{@link #SLOT_COUNT}-slot {@link Inventory} for
+ * {@code ICBM_BASICS.CIWS_AMMO} - hopper fed, or right-click opens a small GUI
+ * (the slots + player inventory) to see/refill the count. Rounds are drawn
+ * from the first non-empty slot, so a full magazine drains left to right.
  *
  * <p>Only fires while {@link WireNetwork#isConnectedToRadar} finds a path to a
  * radar - direct adjacency or a chain of {@code WIRE} blocks. Unconnected
@@ -61,8 +62,10 @@ public class CiwsBlockEntity extends BlockEntity
 	/** Hard safety cap on bursts fired in a single tick, regardless of how high ciwsRoundsPerSecond is set. */
 	private static final int MAX_BURSTS_PER_TICK = 20;
 	public static final int AMMO_SLOT = 0;
+	/** Magazine depth - ammo slots, drained in order from {@link #AMMO_SLOT}. */
+	public static final int SLOT_COUNT = 6;
 
-	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
+	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(SLOT_COUNT, ItemStack.EMPTY);
 	/**
 	 * Fractional "rounds owed" - a tick-integer cooldown can't express more
 	 * than 20 bursts/sec, so this accumulates {@code ciwsRoundsPerSecond / 20}
@@ -84,7 +87,7 @@ public class CiwsBlockEntity extends BlockEntity
 		if (ciws.fireAccumulator < 1.0) {
 			return;
 		}
-		if (ciws.inventory.get(AMMO_SLOT).isEmpty()) {
+		if (ciws.isEmpty()) {
 			ciws.fireAccumulator = 0.0;
 			return;
 		}
@@ -119,12 +122,28 @@ public class CiwsBlockEntity extends BlockEntity
 		}
 
 		int bursts = Math.min(MAX_BURSTS_PER_TICK, (int) Math.floor(ciws.fireAccumulator));
-		for (int i = 0; i < bursts && !ciws.inventory.get(AMMO_SLOT).isEmpty(); i++) {
+		for (int i = 0; i < bursts && ciws.consumeRound(); i++) {
 			ciws.fireAccumulator -= 1.0;
-			ciws.inventory.get(AMMO_SLOT).decrement(1);
 			ciws.fireBurst(serverWorld, centerX, centerY, centerZ, target);
 		}
 		ciws.markDirty();
+	}
+
+	/**
+	 * Pulls one round off the first non-empty ammo slot, so the magazine
+	 * drains in slot order rather than needing the whole thing topped up.
+	 *
+	 * @return false when every slot is empty (nothing was consumed)
+	 */
+	private boolean consumeRound() {
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			ItemStack stack = this.inventory.get(slot);
+			if (!stack.isEmpty()) {
+				stack.decrement(1);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** One tracer round fired per burst - the rapid fireAccumulator rate is what makes it read as a "burst," not multiple rounds at once. */
@@ -184,7 +203,12 @@ public class CiwsBlockEntity extends BlockEntity
 
 	@Override
 	public boolean isEmpty() {
-		return this.inventory.get(AMMO_SLOT).isEmpty();
+		for (ItemStack stack : this.inventory) {
+			if (!stack.isEmpty()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
