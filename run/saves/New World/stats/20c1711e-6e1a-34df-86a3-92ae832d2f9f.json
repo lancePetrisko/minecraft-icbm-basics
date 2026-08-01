@@ -1,0 +1,20 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "icbmbasics:icbm_missile": 2
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1625,
+      "minecraft:walk_one_cm": 2055,
+      "minecraft:total_world_time": 1638,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 7988,
+      "minecraft:crouch_one_cm": 110,
+      "minecraft:sneak_time": 104,
+      "minecraft:play_time": 1625,
+      "minecraft:jump": 8,
+      "minecraft:time_since_death": 1625
+    }
+  },
+  "DataVersion": 4671
+}

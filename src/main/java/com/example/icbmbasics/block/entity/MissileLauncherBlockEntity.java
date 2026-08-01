@@ -10,6 +10,7 @@ import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.screen.MissileLauncherScreenHandler;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -88,6 +89,43 @@ public class MissileLauncherBlockEntity extends BlockEntity
 	}
 
 	// ------------------------------------------------------------------ launch
+
+	/**
+	 * Pushes what's in the missile slot onto the {@code LOADED} blockstate, so
+	 * the platform model shows the loaded missile standing in its guard rails.
+	 * Same scheme as {@code SamSiteBlock.LOADED} and
+	 * {@code ArmoredBlock.ARMOR_DAMAGE}.
+	 */
+	private void syncLoadedMissile() {
+		World world = this.getWorld();
+		if (world == null || world.isClient()) {
+			return;
+		}
+		ItemStack ammo = this.inventory.get(MISSILE_SLOT);
+		int loaded = MissileLauncherBlock.LOAD_EMPTY;
+		if (ammo.isOf(ModItems.CRUISE_MISSILE)) {
+			loaded = MissileLauncherBlock.LOAD_CRUISE;
+		} else if (ammo.isOf(ModItems.ICBM_MISSILE)) {
+			loaded = MissileLauncherBlock.LOAD_STANDARD;
+		}
+
+		BlockState state = world.getBlockState(this.getPos());
+		if (state.getBlock() instanceof MissileLauncherBlock
+				&& state.get(MissileLauncherBlock.LOADED) != loaded) {
+			// NOTIFY_LISTENERS, not NOTIFY_ALL: a property-only change must not
+			// read as the block being replaced, or onStateReplaced would
+			// ItemScatterer.spawn this launcher's own inventory every time a
+			// missile was loaded or fired.
+			world.setBlockState(this.getPos(), state.with(MissileLauncherBlock.LOADED, loaded),
+					Block.NOTIFY_LISTENERS);
+		}
+	}
+
+	@Override
+	public void markDirty() {
+		super.markDirty();
+		this.syncLoadedMissile();
+	}
 
 	/**
 	 * Called by the block on a redstone rising edge. Fires only if a missile is

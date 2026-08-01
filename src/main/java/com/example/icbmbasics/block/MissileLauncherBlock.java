@@ -16,6 +16,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
@@ -36,12 +37,30 @@ public class MissileLauncherBlock extends BlockWithEntity {
 
 	public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
 	public static final BooleanProperty POWERED = Properties.POWERED;
+	/**
+	 * What's sitting on the pad: {@link #LOAD_EMPTY}, {@link #LOAD_STANDARD} or
+	 * {@link #LOAD_CRUISE}. Drives which missile (if any) the platform model
+	 * shows standing in its guard rails, kept in sync by
+	 * {@code MissileLauncherBlockEntity.syncLoadedMissile()}.
+	 *
+	 * <p>An int rather than a {@code StringIdentifiable} enum purely for
+	 * consistency - {@code ArmoredBlock.ARMOR_DAMAGE} and
+	 * {@code SamSiteBlock.LOADED} are both ints, and the repo has no
+	 * custom-enum-property precedent to follow. The cost is that F3 shows
+	 * {@code loaded=2} rather than {@code loaded=cruise}.
+	 */
+	public static final IntProperty LOADED = IntProperty.of("loaded", 0, 2);
+
+	public static final int LOAD_EMPTY = 0;
+	public static final int LOAD_STANDARD = 1;
+	public static final int LOAD_CRUISE = 2;
 
 	public MissileLauncherBlock(Settings settings) {
 		super(settings);
 		this.setDefaultState(this.getDefaultState()
 				.with(FACING, Direction.NORTH)
-				.with(POWERED, false));
+				.with(POWERED, false)
+				.with(LOADED, LOAD_EMPTY));
 	}
 
 	@Override
@@ -51,7 +70,7 @@ public class MissileLauncherBlock extends BlockWithEntity {
 
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(FACING, POWERED);
+		builder.add(FACING, POWERED, LOADED);
 	}
 
 	@Override

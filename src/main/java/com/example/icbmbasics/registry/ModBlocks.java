@@ -55,6 +55,10 @@ public final class ModBlocks {
 					.registryKey(MISSILE_LAUNCHER_KEY)
 					.strength(3.5f, 8.0f)
 					.requiresTool()
+					// its model is an open platform with guard rails, not a full
+					// cube - without this the block counts as solid, so neighbours
+					// cull their faces against it and you see through the deck
+					.nonOpaque()
 					.sounds(BlockSoundGroup.METAL)));
 
 	/**

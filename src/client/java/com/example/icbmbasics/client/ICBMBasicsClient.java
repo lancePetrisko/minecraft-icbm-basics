@@ -34,14 +34,19 @@ import net.minecraft.text.Text;
 public class ICBMBasicsClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
-		// The missile renders as its (oversized) item, oriented along its flight
-		// path rather than billboarding to the camera - see MissileEntityRenderer.
-		// Swap this for a custom EntityModel later if you want a fancier missile.
+		// The missile renders as its item, oriented along its flight path rather
+		// than billboarding to the camera - see MissileEntityRenderer.
+		// These scales are load-bearing: the item models are 32 units (2 blocks)
+		// nose to tail with a ground display scale of 0.25, so rendered length is
+		// 2 * 0.25 * scale blocks. 4.0 gives the 2-block missile the model was
+		// drawn for. Retune here, not in the model's ground scale - that one is
+		// shared with dropped items on the floor.
 		EntityRendererRegistry.register(ModEntities.MISSILE,
-				ctx -> new MissileEntityRenderer<>(ctx, 2.5f));
-		// SAM interceptors reuse the same missile item, just smaller.
+				ctx -> new MissileEntityRenderer<>(ctx, 4.0f));
+		// SAM interceptors reuse the ICBM item model (SamInterceptorEntity.getStack),
+		// so they're sized off the same arithmetic - half the length, 1 block.
 		EntityRendererRegistry.register(ModEntities.SAM_INTERCEPTOR,
-				ctx -> new MissileEntityRenderer<>(ctx, 1.5f));
+				ctx -> new MissileEntityRenderer<>(ctx, 2.0f));
 		// CIWS tracer rounds render as a small flying gray-concrete "bullet",
 		// same renderer, just a plain block item instead of the missile item.
 		EntityRendererRegistry.register(ModEntities.CIWS_BULLET,

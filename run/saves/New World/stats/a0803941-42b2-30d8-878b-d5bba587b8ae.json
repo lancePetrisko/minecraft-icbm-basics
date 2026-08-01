@@ -1,0 +1,26 @@
+{
+  "stats": {
+    "minecraft:picked_up": {
+      "icbmbasics:cruise_missile": 2,
+      "icbmbasics:icbm_missile": 2
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 1420,
+      "minecraft:walk_one_cm": 1983,
+      "minecraft:total_world_time": 1551,
+      "minecraft:leave_game": 1,
+      "minecraft:fly_one_cm": 5631,
+      "minecraft:crouch_one_cm": 61,
+      "minecraft:sneak_time": 67,
+      "minecraft:play_time": 1420,
+      "minecraft:jump": 6,
+      "minecraft:time_since_death": 1420,
+      "minecraft:drop": 6
+    },
+    "minecraft:dropped": {
+      "icbmbasics:cruise_missile": 2,
+      "icbmbasics:icbm_missile": 4
+    }
+  },
+  "DataVersion": 4671
+}

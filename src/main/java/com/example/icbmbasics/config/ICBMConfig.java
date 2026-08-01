@@ -59,8 +59,20 @@ public class ICBMConfig {
 	/** SAM site detection/engagement radius (blocks). Ignores missiles still on the pad, same rule as radar. */
 	public int samDetectionRadius = 80;
 
-	/** Ticks between SAM interceptor launches (one at a time per site). */
-	public int samFireCooldownTicks = 60;
+	/**
+	 * Ticks between SAM interceptor launches while the site still has rounds in
+	 * its chamber. 10 ticks = 0.5s. A site engages a different (unclaimed)
+	 * target each shot, so this is also how fast it walks down a salvo.
+	 */
+	public int samFireCooldownTicks = 10;
+
+	/**
+	 * Ticks to refill the chamber once it runs dry. 70 ticks = 3.5s, during
+	 * which the site can't fire at all and its rack shows no nose cones.
+	 * Refills partially if fewer than a full chamber's worth of rockets are
+	 * left in the ammo slots.
+	 */
+	public int samReloadTicks = 70;
 
 	/** Chance (0-1) a fired SAM interceptor actually destroys its target on arrival. */
 	public double samAccuracy = 0.3;
@@ -130,7 +142,10 @@ public class ICBMConfig {
 		}
 
 		samDetectionRadius = Math.max(16, Math.min(samDetectionRadius, 512));
+		// Ceilings well above the defaults on purpose: a clamp below a default
+		// silently overrides hand-edited config values with no error.
 		samFireCooldownTicks = Math.max(1, Math.min(samFireCooldownTicks, 2000));
+		samReloadTicks = Math.max(1, Math.min(samReloadTicks, 2000));
 		samAccuracy = Math.max(0.0, Math.min(samAccuracy, 1.0));
 		samInterceptorSpeed = Math.max(0.2, Math.min(samInterceptorSpeed, 4.0));
 

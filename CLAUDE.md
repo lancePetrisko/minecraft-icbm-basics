@@ -24,7 +24,15 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
 - `ICBMBasics.java` — `ModInitializer`. Loads config, registers items/blocks/block-entities/
   entities/screen handlers, registers all C2S/S2C network payload receivers (target-set,
   waypoint save/delete, waypoint-list push).
-- `block/MissileLauncherBlock.java` — `BlockWithEntity`. FACING + POWERED state, faces placer
+- `block/MissileLauncherBlock.java` — `BlockWithEntity`. FACING + POWERED + **`LOADED`** state
+  (`IntProperty` 0–2: `LOAD_EMPTY`/`LOAD_STANDARD`/`LOAD_CRUISE`), which picks one of three
+  platform models — an open pad with guard rails on the back and both sides, front deliberately
+  open, showing the loaded missile standing in it. Synced from
+  `MissileLauncherBlockEntity.syncLoadedMissile()` off an overridden `markDirty()`, with
+  `Block.NOTIFY_LISTENERS` — same hazard as the SAM site: `onStateReplaced` here calls
+  `ItemScatterer.spawn`, so a property-only change that read as a replacement would dump the
+  launcher's own inventory every time a missile was loaded or fired. Block settings need
+  `.nonOpaque()` now that the model isn't a full cube. Faces placer
   like a dispenser, opens GUI on right-click, fires on redstone **rising edge** only
   (`neighborUpdate`), drops its ammo item via `ItemScatterer` in `onStateReplaced`.
 - `block/entity/MissileLauncherBlockEntity.java` — implements `Inventory` (2 slots:
@@ -476,31 +484,40 @@ Resources (`src/main/resources/`):
 - `fabric.mod.json`, `icbmbasics.mixins.json` — mod metadata / mixin config (no mixins yet, just
   the empty config).
 - `assets/icbmbasics/lang/en_us.json` — all GUI/translatable strings.
-- `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. The ICBM missile
-  now has a real 3D model: `models/item/icbm_missile.json` is a Blockbench-authored elements
-  model (texture `textures/item/missile2.png`, 16x16 — 6 elements: body, booster, 4 fins). It's a
-  **baked** copy of the author's working file (`~/Documents/missile2.json`), not a straight import:
-  Blockbench exports element rotations in its own per-axis form (`{"x":0,"y":0,"z":90,...}`) and
-  vanilla only parses `{"angle": ±45/±22.5/0, "axis": ...}`, so the 4 fins' `z: 90` rotations were
-  baked into the geometry. **The bake recipe for a `+90` about Z** (right-hand rule, matching
-  `BakedQuadFactory`): coords `(x,y) -> (-dy, dx)` about the element's rotation origin; faces cycle
-  `east->up`, `up->west`, `west->down`, `down->east` (all four carry their old `uv` verbatim plus
-  `"rotation": 270`); `north` keeps its `uv` plus `"rotation": 90` and `south` plus
-  `"rotation": 270`. (An earlier model version needed the same treatment for `y: -90`.) Its
-  `display.ground` entry rotates the model `[-90, 0, 0]` because `MissileEntityRenderer` renders
-  with `ItemDisplayContext.GROUND` and expects the nose along local -Z, while the model is built
-  nose-up (+Y) — don't remove that display entry or the flying missile renders sideways. Every
-  `display` entry's `translation`/`scale` is **derived, not hand-tuned**: they were carried over
-  from the previous (23-units-tall) model and rescaled to keep the same on-screen size and centering
-  for this smaller (8-units-tall) one, via `v = t/16 + R*S*(c/16 - 0.5)` (bbox center `c`, display
-  rotation `R`, scale `S`) solved for the new `t` — that's why `ground.translation.z` is negative
-  now (it cancels the model's own bbox offset after the -90 rotation) and why every scale is the
-  old one times `23/8`. If the model's bbox changes again, redo that arithmetic rather than nudging
-  numbers by eye. `models/item/cruise_missile.json` is just
-  `"parent": "icbmbasics:item/icbm_missile"`, so both missiles share the 3D model. The older
-  `textures/item/missile.png` (64x64, for the previous model) and the flat
-  `textures/item/icbm_missile.png` sprite both still exist — the flat one is still referenced by
-  `sam_ammo`/`ciws_ammo`; `missile.png` is now unreferenced but kept. **CIWS and radar now have
+- `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. **The missiles and
+  the launcher are all generated** now (`scratchpad/missile.py`, `scratchpad/launcher.py`), same
+  pattern as `sam.py`/`ciws.py`/`radar.py`. `models/item/icbm_missile.json` (32 units nose to
+  nozzle, ~13:1) and `models/item/cruise_missile.json` (28 units, own silhouette — ogive nose,
+  belly intake, stub wings) are now **separate models**; cruise used to be a bare
+  `"parent": "icbmbasics:item/icbm_missile"` alias. The generator exists specifically to kill two
+  recurring hazards:
+  (1) **No element carries a rotation at all** — fins/wings are axis-aligned plates. The previous
+  model was a hand-**baked** Blockbench export, because Blockbench writes per-axis rotations
+  (`{"x":0,"y":0,"z":90}`) and vanilla only parses `{"angle": ±45/±22.5/0, "axis": ...}`, so its
+  4 fins' `z: 90` had to be baked into geometry by hand. (Recipe, if ever needed again: coords
+  `(x,y) -> (-dy, dx)` about the rotation origin; faces cycle `east->up`, `up->west`,
+  `west->down`, `down->east`, all carrying their old `uv` plus `"rotation": 270`; `north` keeps
+  its `uv` plus `"rotation": 90`, `south` plus `"rotation": 270`.)
+  (2) **Both models are authored centered on `(8, 0, 8)`, spanning y ±16**, so `c/16 - 0.5` is
+  zero on every axis and every `display` translation is legitimately `[0,0,0]` — no more
+  re-deriving `v = t/16 + R*S*(c/16 - 0.5)` by hand whenever the bbox moves. Only scales get
+  chosen. Keep this property if you reshape them; a `check()` in the script asserts it.
+  `display.ground` still rotates `[-90, 0, 0]` because `MissileEntityRenderer` renders with
+  `ItemDisplayContext.GROUND` and expects the nose along local -Z while the model is built nose-up
+  — don't remove it or every missile in flight renders sideways.
+  **Sizing is split deliberately**: `ground` scale (0.25) is shared with *dropped items on the
+  floor*, so in-flight size lives in the per-entity renderer scales in `ICBMBasicsClient`
+  (`rendered length = 2 blocks * ground_scale * renderer_scale`; 4.0 → a 2-block missile, 2.0 → a
+  1-block SAM interceptor). Retune there, not in the model. Note `SamInterceptorEntity.getStack()`
+  returns `ICBM_MISSILE`, so **the interceptor shares the ICBM's model** — changing it moves both.
+  Old textures `textures/item/missile.png` and `missile2.png` are now unreferenced but kept; the
+  flat `textures/item/icbm_missile.png` sprite is still used by `sam_ammo`/`ciws_ammo`.
+  **`textures/item/missile_parts.png` is written to `textures/block/` as well, and that
+  duplication is required**: Minecraft stitches item and block textures into separate atlases and
+  a *block* model may only reference block-atlas sprites. The launcher pad's models embed the
+  missile geometry, and pointing them at `item/missile_parts` got them rejected outright
+  (`"contains sprites from outside of supported atlas"`, plus `Unable to bake item model`) — a
+  failure that only shows up in the `runClient` log, never at build time. **CIWS and radar now have
   real models + textures**, not placeholders: `models/block/ciws.json` is a 24-element Phalanx
   turret (pedestal, octagonal ammo drum, stepped white radome, forward 6-barrel Vulcan) on
   `textures/block/ciws.png`, and `models/block/radar_mk1.json` + `models/item/radar_mk1.json` are

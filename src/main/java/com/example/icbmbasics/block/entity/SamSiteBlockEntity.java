@@ -61,10 +61,20 @@ import java.util.WeakHashMap;
  *
  * <p>{@link #SLOT_COUNT}-slot {@link Inventory} for
  * {@code ICBM_BASICS.SAM_AMMO} - hopper fed, or right-click opens a small GUI
- * (the slots + player inventory) to see/refill the count. <b>One slot per
- * launch tube</b>: the site cycles tubes round-robin ({@link #nextTube}) and a
- * tube whose own slot is empty is skipped, so the model's six tubes and the
- * GUI's six slots are the same six things.
+ * (the slots + player inventory) to see/refill the count.
+ *
+ * <p><b>Firing is chamber-based.</b> The slots are the magazine; {@link #chamber}
+ * is what's actually in the tubes. A site fires one round every
+ * {@code samFireCooldownTicks} (10 = 0.5s) at a different unclaimed target each
+ * time, and once the chamber runs dry it spends {@code samReloadTicks}
+ * (70 = 3.5s) unable to fire before restaging up to {@link #SLOT_COUNT} more
+ * rounds out of the slots - partially, if that's all that's left.
+ *
+ * <p>Simulated against the defaults, that works out to a 6-round salvo spanning
+ * 50 ticks, then a 71-tick gap to the next salvo's first shot (the 70-tick
+ * reload plus the tick the refill itself consumes) - a <b>121-tick / 6.05s
+ * cycle</b>, i.e. ~1 round/sec sustained, not the 2/sec the fire cooldown alone
+ * suggests. Work the arithmetic out again if either config value moves.
  *
  * <p>Only fires while {@link WireNetwork#isConnectedToRadar} finds a path to a
  * radar - direct adjacency or a chain of {@code WIRE} blocks. Unconnected
@@ -102,8 +112,15 @@ public class SamSiteBlockEntity extends BlockEntity
 
 	private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(SLOT_COUNT, ItemStack.EMPTY);
 	private int cooldown;
-	/** Which tube fires next, so a full rack empties evenly instead of always launching from tube 0. */
-	private int nextTube;
+	/**
+	 * Rockets sitting in the tubes, ready to fire, 0..{@link #SLOT_COUNT}. This
+	 * is a staging area in front of the ammo slots, not a view of them: rounds
+	 * move slots -> chamber only during a reload, and it's the chamber that the
+	 * rack's nose cones display.
+	 */
+	private int chamber;
+	/** Counts down while refilling the chamber; 0 means ready. */
+	private int reloadTicks;
 
 	public SamSiteBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.SAM_SITE, pos, state);
@@ -119,13 +136,33 @@ public class SamSiteBlockEntity extends BlockEntity
 		if (world.getTime() % SCAN_INTERVAL_TICKS == 0) {
 			site.syncLoadedTubes();
 		}
+
+		// Timers run every tick, and the cooldown alone decides when a shot is
+		// allowed. There is deliberately NO outer "only act every N ticks" gate
+		// here: with SCAN_INTERVAL_TICKS == samFireCooldownTicks == 10 one would
+		// happen to line up, but any shorter cooldown would then be silently
+		// capped at the gate's period instead - exactly the bug that shipped on
+		// CIWS and went unnoticed. The scan below is the expensive part, and it
+		// only runs on ticks where the site is genuinely ready to fire.
 		if (site.cooldown > 0) {
 			site.cooldown--;
 		}
-		if (world.getTime() % SCAN_INTERVAL_TICKS != 0 || site.cooldown > 0) {
+		if (site.reloadTicks > 0) {
+			site.reloadTicks--;
+			if (site.reloadTicks == 0) {
+				site.refillChamber();
+			}
 			return;
 		}
-		if (site.isEmpty()) {
+		if (site.chamber <= 0) {
+			// Empty chamber with rounds still in the slots starts a reload;
+			// with nothing left in the slots it just sits idle, silently.
+			if (!site.isEmpty()) {
+				site.reloadTicks = ICBMBasics.CONFIG.samReloadTicks;
+			}
+			return;
+		}
+		if (site.cooldown > 0) {
 			return;
 		}
 		// Wire may butt against either half of the two-tall block; the block
@@ -160,10 +197,9 @@ public class SamSiteBlockEntity extends BlockEntity
 			return;
 		}
 
-		int tube = site.selectLoadedTube();
-		if (tube < 0) {
-			return;
-		}
+		// Fire from the highest loaded tube, so the rack's nose cones empty
+		// right-to-left instead of a hole appearing in the middle.
+		int tube = site.chamber - 1;
 
 		claim(serverWorld, target.getUuid());
 
@@ -185,24 +221,33 @@ public class SamSiteBlockEntity extends BlockEntity
 
 		serverWorld.spawnParticles(ParticleTypes.LARGE_SMOKE, muzzle.x, muzzle.y, muzzle.z, 8, 0.1, 0.1, 0.1, 0.02);
 		serverWorld.playSound(null, pos, SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.HOSTILE, 3.0f, 1.3f);
-		site.inventory.get(tube).decrement(1);
-		site.nextTube = (tube + 1) % SLOT_COUNT;
+		// The round came out of the chamber, not the slots - the slots were
+		// already debited when the chamber was filled.
+		site.chamber--;
 		site.cooldown = ICBMBasics.CONFIG.samFireCooldownTicks;
+		if (site.chamber == 0) {
+			site.reloadTicks = ICBMBasics.CONFIG.samReloadTicks;
+		}
 		site.markDirty();
 	}
 
 	/**
-	 * Next tube in the round-robin whose own ammo slot still has a rocket in
-	 * it, or -1 if the whole rack is dry.
+	 * Moves up to a full chamber's worth of rockets out of the ammo slots and
+	 * into the tubes. <b>Partial reloads are fine</b>: three rockets left means
+	 * a three-round chamber and three nose cones, not a refusal to reload.
 	 */
-	private int selectLoadedTube() {
-		for (int offset = 0; offset < SLOT_COUNT; offset++) {
-			int tube = (this.nextTube + offset) % SLOT_COUNT;
-			if (!this.inventory.get(tube).isEmpty()) {
-				return tube;
+	private void refillChamber() {
+		int wanted = SLOT_COUNT - this.chamber;
+		for (int slot = 0; slot < this.inventory.size() && wanted > 0; slot++) {
+			ItemStack stack = this.inventory.get(slot);
+			int taken = Math.min(wanted, stack.getCount());
+			if (taken > 0) {
+				stack.decrement(taken);
+				this.chamber += taken;
+				wanted -= taken;
 			}
 		}
-		return -1;
+		this.markDirty();
 	}
 
 	/**
@@ -251,24 +296,35 @@ public class SamSiteBlockEntity extends BlockEntity
 	// ------------------------------------------------------------ loaded rounds
 
 	/**
-	 * Pushes the loaded-rocket count onto both halves' {@code LOADED}
-	 * blockstate, which is what puts red nose cones in the rack's tubes - one
-	 * per rocket, capped at {@link #SLOT_COUNT} because that's how many tubes
-	 * there are to show them in. Counts <b>total</b> rockets across the
-	 * inventory rather than how many slots are occupied, so six rockets stacked
-	 * in one slot still fill the rack.
+	 * Pushes the chamber count onto both halves' {@code LOADED} blockstate,
+	 * which is what puts red nose cones in the rack's tubes - one per round
+	 * actually ready to fire. Showing the chamber rather than total ammo is
+	 * what makes the rack readable: cones disappear one per shot and come back
+	 * together when a reload finishes, so an empty rack means "reloading", not
+	 * "out of ammo".
 	 */
 	private void syncLoadedTubes() {
 		if (this.world == null || this.world.isClient()) {
 			return;
 		}
-		int total = 0;
-		for (ItemStack stack : this.inventory) {
-			total += stack.getCount();
-		}
-		int loaded = Math.min(total, SLOT_COUNT);
+		int loaded = MathHelper.clamp(this.chamber, 0, SLOT_COUNT);
 		setLoaded(this.world, this.getPos(), loaded);
 		setLoaded(this.world, this.getPos().up(), loaded);
+	}
+
+	/**
+	 * The chambered rounds as a droppable stack, emptying the chamber. Rounds
+	 * staged in the tubes have already left the ammo slots, so
+	 * {@code ItemScatterer.spawn(world, pos, this)} alone would quietly delete
+	 * up to {@link #SLOT_COUNT} rockets when the site is broken.
+	 */
+	public ItemStack removeChamberedRounds() {
+		if (this.chamber <= 0) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack stack = new ItemStack(ModItems.SAM_AMMO, this.chamber);
+		this.chamber = 0;
+		return stack;
 	}
 
 	private static void setLoaded(World world, BlockPos pos, int loaded) {
@@ -383,7 +439,8 @@ public class SamSiteBlockEntity extends BlockEntity
 	protected void writeData(WriteView view) {
 		super.writeData(view);
 		view.putInt("Cooldown", this.cooldown);
-		view.putInt("NextTube", this.nextTube);
+		view.putInt("Chamber", this.chamber);
+		view.putInt("ReloadTicks", this.reloadTicks);
 		Inventories.writeData(view, this.inventory);
 	}
 
@@ -391,7 +448,8 @@ public class SamSiteBlockEntity extends BlockEntity
 	protected void readData(ReadView view) {
 		super.readData(view);
 		this.cooldown = view.getInt("Cooldown", 0);
-		this.nextTube = MathHelper.clamp(view.getInt("NextTube", 0), 0, SLOT_COUNT - 1);
+		this.chamber = MathHelper.clamp(view.getInt("Chamber", 0), 0, SLOT_COUNT);
+		this.reloadTicks = Math.max(0, view.getInt("ReloadTicks", 0));
 		this.inventory.clear();
 		Inventories.readData(view, this.inventory);
 	}

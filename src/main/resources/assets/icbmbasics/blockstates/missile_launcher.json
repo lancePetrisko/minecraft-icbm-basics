@@ -1,19 +1,49 @@
 {
 	"variants": {
-		"facing=north": {
-			"model": "icbmbasics:block/missile_launcher"
+		"facing=north,loaded=0": {
+			"model": "icbmbasics:block/missile_launcher_0"
 		},
-		"facing=south": {
-			"model": "icbmbasics:block/missile_launcher",
+		"facing=north,loaded=1": {
+			"model": "icbmbasics:block/missile_launcher_1"
+		},
+		"facing=north,loaded=2": {
+			"model": "icbmbasics:block/missile_launcher_2"
+		},
+		"facing=east,loaded=0": {
+			"model": "icbmbasics:block/missile_launcher_0",
+			"y": 90
+		},
+		"facing=east,loaded=1": {
+			"model": "icbmbasics:block/missile_launcher_1",
+			"y": 90
+		},
+		"facing=east,loaded=2": {
+			"model": "icbmbasics:block/missile_launcher_2",
+			"y": 90
+		},
+		"facing=south,loaded=0": {
+			"model": "icbmbasics:block/missile_launcher_0",
 			"y": 180
 		},
-		"facing=west": {
-			"model": "icbmbasics:block/missile_launcher",
+		"facing=south,loaded=1": {
+			"model": "icbmbasics:block/missile_launcher_1",
+			"y": 180
+		},
+		"facing=south,loaded=2": {
+			"model": "icbmbasics:block/missile_launcher_2",
+			"y": 180
+		},
+		"facing=west,loaded=0": {
+			"model": "icbmbasics:block/missile_launcher_0",
 			"y": 270
 		},
-		"facing=east": {
-			"model": "icbmbasics:block/missile_launcher",
-			"y": 90
+		"facing=west,loaded=1": {
+			"model": "icbmbasics:block/missile_launcher_1",
+			"y": 270
+		},
+		"facing=west,loaded=2": {
+			"model": "icbmbasics:block/missile_launcher_2",
+			"y": 270
 		}
 	}
 }

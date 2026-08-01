@@ -209,6 +209,12 @@ public class SamSiteBlock extends BlockWithEntity {
 		// to scatter, so the getBlockEntity check is the guard.
 		if (world.getBlockEntity(pos) instanceof SamSiteBlockEntity site) {
 			ItemScatterer.spawn(world, pos, site);
+			// Rounds staged in the tubes have already left the ammo slots, so
+			// they need dropping separately or they're silently destroyed.
+			ItemStack chambered = site.removeChamberedRounds();
+			if (!chambered.isEmpty()) {
+				ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, chambered);
+			}
 		}
 		super.onStateReplaced(state, world, pos, moved);
 	}
