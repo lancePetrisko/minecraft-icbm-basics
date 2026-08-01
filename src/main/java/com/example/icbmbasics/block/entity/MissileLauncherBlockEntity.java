@@ -109,14 +109,21 @@ public class MissileLauncherBlockEntity extends BlockEntity
 			loaded = MissileLauncherBlock.LOAD_STANDARD;
 		}
 
-		BlockState state = world.getBlockState(this.getPos());
+		// Mirrored onto the gantry too: the missile straddles both halves, so
+		// both models have to agree on what's loaded.
+		setLoaded(world, this.getPos(), loaded);
+		setLoaded(world, this.getPos().up(), loaded);
+	}
+
+	private static void setLoaded(World world, BlockPos pos, int loaded) {
+		BlockState state = world.getBlockState(pos);
 		if (state.getBlock() instanceof MissileLauncherBlock
 				&& state.get(MissileLauncherBlock.LOADED) != loaded) {
 			// NOTIFY_LISTENERS, not NOTIFY_ALL: a property-only change must not
 			// read as the block being replaced, or onStateReplaced would
 			// ItemScatterer.spawn this launcher's own inventory every time a
 			// missile was loaded or fired.
-			world.setBlockState(this.getPos(), state.with(MissileLauncherBlock.LOADED, loaded),
+			world.setBlockState(pos, state.with(MissileLauncherBlock.LOADED, loaded),
 					Block.NOTIFY_LISTENERS);
 		}
 	}
@@ -144,7 +151,9 @@ public class MissileLauncherBlockEntity extends BlockEntity
 
 		BlockPos pos = this.getPos();
 		double spawnX = pos.getX() + 0.5;
-		double spawnY = pos.getY() + 1.1;
+		// Clear of the gantry: the launcher is two blocks tall now, and the
+		// missile stands most of the way up it.
+		double spawnY = pos.getY() + 2.4;
 		double spawnZ = pos.getZ() + 0.5;
 
 		Direction facing = this.getCachedState().contains(MissileLauncherBlock.FACING)

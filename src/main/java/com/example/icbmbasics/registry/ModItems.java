@@ -75,7 +75,7 @@ public final class ModItems {
 			new CruiseMissileItem(new Item.Settings().registryKey(CRUISE_MISSILE_KEY).maxCount(16)));
 
 	public static final Item MISSILE_LAUNCHER = Registry.register(Registries.ITEM, MISSILE_LAUNCHER_KEY,
-			new BlockItem(ModBlocks.MISSILE_LAUNCHER, new Item.Settings()
+			new TallBlockItem(ModBlocks.MISSILE_LAUNCHER, new Item.Settings()
 					.registryKey(MISSILE_LAUNCHER_KEY)
 					.useBlockPrefixedTranslationKey()));
 

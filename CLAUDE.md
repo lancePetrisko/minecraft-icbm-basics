@@ -24,15 +24,23 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
 - `ICBMBasics.java` — `ModInitializer`. Loads config, registers items/blocks/block-entities/
   entities/screen handlers, registers all C2S/S2C network payload receivers (target-set,
   waypoint save/delete, waypoint-list push).
-- `block/MissileLauncherBlock.java` — `BlockWithEntity`. FACING + POWERED + **`LOADED`** state
-  (`IntProperty` 0–2: `LOAD_EMPTY`/`LOAD_STANDARD`/`LOAD_CRUISE`), which picks one of three
-  platform models — an open pad with guard rails on the back and both sides, front deliberately
-  open, showing the loaded missile standing in it. Synced from
-  `MissileLauncherBlockEntity.syncLoadedMissile()` off an overridden `markDirty()`, with
-  `Block.NOTIFY_LISTENERS` — same hazard as the SAM site: `onStateReplaced` here calls
-  `ItemScatterer.spawn`, so a property-only change that read as a replacement would dump the
-  launcher's own inventory every time a missile was loaded or fired. Block settings need
-  `.nonOpaque()` now that the model isn't a full cube. Faces placer
+- `block/MissileLauncherBlock.java` — `BlockWithEntity`, **two blocks tall** (pad = `HALF=LOWER`
+  and owns the block entity, gantry tower = `HALF=UPPER` and is visual only), same split as
+  `SamSiteBlock` and written the same way (`getPlacementState` headroom check, `onPlaced` writes
+  the gantry, `canPlaceAt` asymmetric so pre-existing one-block launchers in saves don't pop,
+  `getStateForNeighborUpdate` removes an orphan half, `onBreak` guards the creative double-drop).
+  Item is a `TallBlockItem`. FACING + POWERED + **`LOADED`** state (`IntProperty` 0–2:
+  `LOAD_EMPTY`/`LOAD_STANDARD`/`LOAD_CRUISE`) picks one of three models per half — an open pad
+  with guard rails on the back and both sides, front deliberately open, showing the loaded missile
+  standing through both blocks. 24 blockstate variants (half × facing × loaded). Synced from
+  `MissileLauncherBlockEntity.syncLoadedMissile()` off an overridden `markDirty()` and **mirrored
+  onto both halves**, with `Block.NOTIFY_LISTENERS` — same hazard as the SAM site:
+  `onStateReplaced` here calls `ItemScatterer.spawn`, so a property-only change that read as a
+  replacement would dump the launcher's own inventory every time a missile was loaded or fired.
+  Block settings need `.nonOpaque()` now that the model isn't a full cube.
+  **Redstone is owned solely by the pad**: `neighborUpdate` on either half resolves to the lower
+  half, checks power at `lower` *and* `lower.up()`, and edges `POWERED` there — both halves
+  converging on one state is what stops a lever touching both from firing twice. Faces placer
   like a dispenser, opens GUI on right-click, fires on redstone **rising edge** only
   (`neighborUpdate`), drops its ammo item via `ItemScatterer` in `onStateReplaced`.
 - `block/entity/MissileLauncherBlockEntity.java` — implements `Inventory` (2 slots:
@@ -487,10 +495,16 @@ Resources (`src/main/resources/`):
 - `assets/icbmbasics/{blockstates,models,items,textures}/` — block/item models. **The missiles and
   the launcher are all generated** now (`scratchpad/missile.py`, `scratchpad/launcher.py`), same
   pattern as `sam.py`/`ciws.py`/`radar.py`. `models/item/icbm_missile.json` (32 units nose to
-  nozzle, ~13:1) and `models/item/cruise_missile.json` (28 units, own silhouette — ogive nose,
-  belly intake, stub wings) are now **separate models**; cruise used to be a bare
-  `"parent": "icbmbasics:item/icbm_missile"` alias. The generator exists specifically to kill two
-  recurring hazards:
+  nozzle, **6:1**) and `models/item/cruise_missile.json` (28 units, 6.2:1, own silhouette — ogive
+  nose, belly intake, stub wings) are now **separate models**; cruise used to be a bare
+  `"parent": "icbmbasics:item/icbm_missile"` alias.
+  **On thickness**: the first pass used a realistic ~13:1 ICBM ratio and it was a mistake — at
+  Minecraft's resolution that renders as a hairline (0.8 units wide in a 16px inventory slot,
+  i.e. under one pixel), which read as "super duper small" even though the *length* was right.
+  `GIRTH` in `missile.py` fattens every radial dimension to land at 6:1; `SPAN` scales fins/wings
+  less so they don't balloon past the model's own bbox. When judging missile size, check the
+  **width** first — length is the misleading number.
+  The generator exists specifically to kill two recurring hazards:
   (1) **No element carries a rotation at all** — fins/wings are axis-aligned plates. The previous
   model was a hand-**baked** Blockbench export, because Blockbench writes per-axis rotations
   (`{"x":0,"y":0,"z":90}`) and vanilla only parses `{"angle": ±45/±22.5/0, "axis": ...}`, so its
