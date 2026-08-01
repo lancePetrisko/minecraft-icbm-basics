@@ -12,6 +12,7 @@ import com.example.icbmbasics.registry.ModItems;
 import com.example.icbmbasics.screen.SamAmmoScreenHandler;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -111,6 +112,12 @@ public class SamSiteBlockEntity extends BlockEntity
 	public static void tick(World world, BlockPos pos, BlockState state, SamSiteBlockEntity site) {
 		if (!(world instanceof ServerWorld serverWorld)) {
 			return;
+		}
+		// markDirty covers every ammo change, but nothing calls it after a chunk
+		// loads, so re-assert the nose cones periodically. Cheap: an int compare
+		// unless the count actually differs.
+		if (world.getTime() % SCAN_INTERVAL_TICKS == 0) {
+			site.syncLoadedTubes();
 		}
 		if (site.cooldown > 0) {
 			site.cooldown--;
@@ -239,6 +246,48 @@ public class SamSiteBlockEntity extends BlockEntity
 				facing.getOffsetX() * horizontal,
 				Math.cos(tilt),
 				facing.getOffsetZ() * horizontal);
+	}
+
+	// ------------------------------------------------------------ loaded rounds
+
+	/**
+	 * Pushes the loaded-rocket count onto both halves' {@code LOADED}
+	 * blockstate, which is what puts red nose cones in the rack's tubes - one
+	 * per rocket, capped at {@link #SLOT_COUNT} because that's how many tubes
+	 * there are to show them in. Counts <b>total</b> rockets across the
+	 * inventory rather than how many slots are occupied, so six rockets stacked
+	 * in one slot still fill the rack.
+	 */
+	private void syncLoadedTubes() {
+		if (this.world == null || this.world.isClient()) {
+			return;
+		}
+		int total = 0;
+		for (ItemStack stack : this.inventory) {
+			total += stack.getCount();
+		}
+		int loaded = Math.min(total, SLOT_COUNT);
+		setLoaded(this.world, this.getPos(), loaded);
+		setLoaded(this.world, this.getPos().up(), loaded);
+	}
+
+	private static void setLoaded(World world, BlockPos pos, int loaded) {
+		BlockState state = world.getBlockState(pos);
+		if (state.getBlock() instanceof SamSiteBlock && state.get(SamSiteBlock.LOADED) != loaded) {
+			// NOTIFY_LISTENERS, not NOTIFY_ALL - a property-only change on a block
+			// that already exists must not read as a replacement, same as
+			// ArmoredBlockEntity's ARMOR_DAMAGE update.
+			world.setBlockState(pos, state.with(SamSiteBlock.LOADED, loaded), Block.NOTIFY_LISTENERS);
+		}
+	}
+
+	@Override
+	public void markDirty() {
+		super.markDirty();
+		// Covers every route ammo can change by: GUI, hopper, and the tick's own
+		// decrement. The equality check in setLoaded keeps this from churning
+		// blockstates on the many markDirty calls that don't change the count.
+		this.syncLoadedTubes();
 	}
 
 	// --------------------------------------------------------------- inventory

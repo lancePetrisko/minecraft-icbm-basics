@@ -181,8 +181,18 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   (no block entity to tick), and **`canPlaceAt` is deliberately asymmetric** — UPPER requires a
   LOWER below it, LOWER does *not* require an UPPER, because sites placed while this was still a
   one-block block exist in saves as lone lower halves and would all pop on chunk load otherwise
-  (those read back as the default state, i.e. `LOWER`/`NORTH`, which is exactly right). Every
-  `SCAN_INTERVAL_TICKS` (10) it picks the nearest missile within `samDetectionRadius` (same
+  (those read back as the default state, i.e. `LOWER`/`NORTH`, which is exactly right).
+  A third property, **`LOADED` (`IntProperty` 0–6)**, puts a red nose cone in that many of the
+  rack's tubes so the rocket count is readable at a glance. Driven by
+  `SamSiteBlockEntity.syncLoadedTubes()` — called from an overridden `markDirty()`, which catches
+  GUI/hopper/firing changes alike, plus a periodic re-assert in `tick` since nothing calls
+  `markDirty` after a chunk loads. It counts **total** rockets across the inventory capped at 6,
+  not occupied slots, so six rockets in one slot still fill the rack. Same "discrete state selects
+  a model variant" scheme as `ArmoredBlock.ARMOR_DAMAGE`, and it depends on that block's key
+  safety property: **the engine does not call `onStateReplaced` for property-only changes**, and
+  the update uses `Block.NOTIFY_LISTENERS` (not `NOTIFY_ALL`) exactly like `ArmoredBlockEntity`.
+  Get either wrong and `SamSiteBlock.onStateReplaced` would `ItemScatterer.spawn` the site's own
+  ammo every time the count changed. Every
   `SCAN_INTERVAL_TICKS` (10) it picks the nearest missile within `samDetectionRadius` (same
   "ignore anything younger than `LAUNCH_ACQUIRE_AGE_TICKS`" rule as radar, so it doesn't shoot
   its own base's outgoing missile off the pad, and the same per-missile
@@ -204,7 +214,7 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
   actual muzzle of the tube it came from rather than at the block center: it re-applies the rack
   model's own element rotation (`-22.5°` about X at `PIVOT_Y`/`PIVOT_Z`) to the tube's authored
   position and maps that out of the model's north-facing frame via `FACING`. **The constants there
-  are the same numbers `models/block/sam_site_upper.json` is generated from — change the model's
+  are the same numbers `models/block/sam_site_upper_*.json` is generated from — change the model's
   tube layout and these must move with it**, which is why the geometry is derived rather than
   measured off the rendered result.
 - `entity/SamInterceptorEntity.java` — homes on its target by **UUID**, re-resolved fresh every

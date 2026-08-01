@@ -1,33 +1,213 @@
 {
 	"variants": {
-		"half=lower,facing=north": {
+		"half=lower,facing=north,loaded=0": {
 			"model": "icbmbasics:block/sam_site_lower"
 		},
-		"half=lower,facing=east": {
+		"half=lower,facing=north,loaded=1": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=north,loaded=2": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=north,loaded=3": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=north,loaded=4": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=north,loaded=5": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=north,loaded=6": {
+			"model": "icbmbasics:block/sam_site_lower"
+		},
+		"half=lower,facing=east,loaded=0": {
 			"model": "icbmbasics:block/sam_site_lower",
 			"y": 90
 		},
-		"half=lower,facing=south": {
+		"half=lower,facing=east,loaded=1": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=east,loaded=2": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=east,loaded=3": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=east,loaded=4": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=east,loaded=5": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=east,loaded=6": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 90
+		},
+		"half=lower,facing=south,loaded=0": {
 			"model": "icbmbasics:block/sam_site_lower",
 			"y": 180
 		},
-		"half=lower,facing=west": {
+		"half=lower,facing=south,loaded=1": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=south,loaded=2": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=south,loaded=3": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=south,loaded=4": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=south,loaded=5": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=south,loaded=6": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 180
+		},
+		"half=lower,facing=west,loaded=0": {
 			"model": "icbmbasics:block/sam_site_lower",
 			"y": 270
 		},
-		"half=upper,facing=north": {
-			"model": "icbmbasics:block/sam_site_upper"
+		"half=lower,facing=west,loaded=1": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
 		},
-		"half=upper,facing=east": {
-			"model": "icbmbasics:block/sam_site_upper",
+		"half=lower,facing=west,loaded=2": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
+		},
+		"half=lower,facing=west,loaded=3": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
+		},
+		"half=lower,facing=west,loaded=4": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
+		},
+		"half=lower,facing=west,loaded=5": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
+		},
+		"half=lower,facing=west,loaded=6": {
+			"model": "icbmbasics:block/sam_site_lower",
+			"y": 270
+		},
+		"half=upper,facing=north,loaded=0": {
+			"model": "icbmbasics:block/sam_site_upper_0"
+		},
+		"half=upper,facing=north,loaded=1": {
+			"model": "icbmbasics:block/sam_site_upper_1"
+		},
+		"half=upper,facing=north,loaded=2": {
+			"model": "icbmbasics:block/sam_site_upper_2"
+		},
+		"half=upper,facing=north,loaded=3": {
+			"model": "icbmbasics:block/sam_site_upper_3"
+		},
+		"half=upper,facing=north,loaded=4": {
+			"model": "icbmbasics:block/sam_site_upper_4"
+		},
+		"half=upper,facing=north,loaded=5": {
+			"model": "icbmbasics:block/sam_site_upper_5"
+		},
+		"half=upper,facing=north,loaded=6": {
+			"model": "icbmbasics:block/sam_site_upper_6"
+		},
+		"half=upper,facing=east,loaded=0": {
+			"model": "icbmbasics:block/sam_site_upper_0",
 			"y": 90
 		},
-		"half=upper,facing=south": {
-			"model": "icbmbasics:block/sam_site_upper",
+		"half=upper,facing=east,loaded=1": {
+			"model": "icbmbasics:block/sam_site_upper_1",
+			"y": 90
+		},
+		"half=upper,facing=east,loaded=2": {
+			"model": "icbmbasics:block/sam_site_upper_2",
+			"y": 90
+		},
+		"half=upper,facing=east,loaded=3": {
+			"model": "icbmbasics:block/sam_site_upper_3",
+			"y": 90
+		},
+		"half=upper,facing=east,loaded=4": {
+			"model": "icbmbasics:block/sam_site_upper_4",
+			"y": 90
+		},
+		"half=upper,facing=east,loaded=5": {
+			"model": "icbmbasics:block/sam_site_upper_5",
+			"y": 90
+		},
+		"half=upper,facing=east,loaded=6": {
+			"model": "icbmbasics:block/sam_site_upper_6",
+			"y": 90
+		},
+		"half=upper,facing=south,loaded=0": {
+			"model": "icbmbasics:block/sam_site_upper_0",
 			"y": 180
 		},
-		"half=upper,facing=west": {
-			"model": "icbmbasics:block/sam_site_upper",
+		"half=upper,facing=south,loaded=1": {
+			"model": "icbmbasics:block/sam_site_upper_1",
+			"y": 180
+		},
+		"half=upper,facing=south,loaded=2": {
+			"model": "icbmbasics:block/sam_site_upper_2",
+			"y": 180
+		},
+		"half=upper,facing=south,loaded=3": {
+			"model": "icbmbasics:block/sam_site_upper_3",
+			"y": 180
+		},
+		"half=upper,facing=south,loaded=4": {
+			"model": "icbmbasics:block/sam_site_upper_4",
+			"y": 180
+		},
+		"half=upper,facing=south,loaded=5": {
+			"model": "icbmbasics:block/sam_site_upper_5",
+			"y": 180
+		},
+		"half=upper,facing=south,loaded=6": {
+			"model": "icbmbasics:block/sam_site_upper_6",
+			"y": 180
+		},
+		"half=upper,facing=west,loaded=0": {
+			"model": "icbmbasics:block/sam_site_upper_0",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=1": {
+			"model": "icbmbasics:block/sam_site_upper_1",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=2": {
+			"model": "icbmbasics:block/sam_site_upper_2",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=3": {
+			"model": "icbmbasics:block/sam_site_upper_3",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=4": {
+			"model": "icbmbasics:block/sam_site_upper_4",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=5": {
+			"model": "icbmbasics:block/sam_site_upper_5",
+			"y": 270
+		},
+		"half=upper,facing=west,loaded=6": {
+			"model": "icbmbasics:block/sam_site_upper_6",
 			"y": 270
 		}
 	}

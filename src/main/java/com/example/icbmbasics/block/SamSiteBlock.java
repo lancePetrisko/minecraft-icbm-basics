@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
@@ -66,6 +67,15 @@ public class SamSiteBlock extends BlockWithEntity {
 
 	public static final EnumProperty<DoubleBlockHalf> HALF = Properties.DOUBLE_BLOCK_HALF;
 	public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
+	/**
+	 * How many rockets are visibly loaded, 0 through
+	 * {@code SamSiteBlockEntity.SLOT_COUNT} - drives which of the rack's tubes
+	 * show a red nose cone. Same "discrete state picks a model variant" scheme
+	 * as {@code ArmoredBlock.ARMOR_DAMAGE}, kept in sync by
+	 * {@code SamSiteBlockEntity.syncLoadedTubes()}. Mirrored onto both halves
+	 * even though only the rack's model reads it, so the two never disagree.
+	 */
+	public static final IntProperty LOADED = IntProperty.of("loaded", 0, SamSiteBlockEntity.SLOT_COUNT);
 
 	/** Base plinth: narrower than a full cube, so its outriggers read as feet rather than a box. */
 	private static final VoxelShape LOWER_SHAPE = Block.createCuboidShape(1.0, 0.0, 1.0, 15.0, 16.0, 15.0);
@@ -76,7 +86,8 @@ public class SamSiteBlock extends BlockWithEntity {
 		super(settings);
 		this.setDefaultState(this.getDefaultState()
 				.with(HALF, DoubleBlockHalf.LOWER)
-				.with(FACING, Direction.NORTH));
+				.with(FACING, Direction.NORTH)
+				.with(LOADED, 0));
 	}
 
 	@Override
@@ -86,7 +97,7 @@ public class SamSiteBlock extends BlockWithEntity {
 
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(HALF, FACING);
+		builder.add(HALF, FACING, LOADED);
 	}
 
 	// ---------------------------------------------------------------- placement
