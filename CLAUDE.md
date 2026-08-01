@@ -24,25 +24,54 @@ Server/common (`src/main/java/com/example/icbmbasics/`):
 - `ICBMBasics.java` — `ModInitializer`. Loads config, registers items/blocks/block-entities/
   entities/screen handlers, registers all C2S/S2C network payload receivers (target-set,
   waypoint save/delete, waypoint-list push).
-- `block/MissileLauncherBlock.java` — `BlockWithEntity`, **two blocks tall** (pad = `HALF=LOWER`
-  and owns the block entity, gantry tower = `HALF=UPPER` and is visual only), same split as
-  `SamSiteBlock` and written the same way (`getPlacementState` headroom check, `onPlaced` writes
-  the gantry, `canPlaceAt` asymmetric so pre-existing one-block launchers in saves don't pop,
-  `getStateForNeighborUpdate` removes an orphan half, `onBreak` guards the creative double-drop).
-  Item is a `TallBlockItem`. FACING + POWERED + **`LOADED`** state (`IntProperty` 0–2:
-  `LOAD_EMPTY`/`LOAD_STANDARD`/`LOAD_CRUISE`) picks one of three models per half — an open pad
-  with guard rails on the back and both sides, front deliberately open, showing the loaded missile
-  standing through both blocks. 24 blockstate variants (half × facing × loaded). Synced from
-  `MissileLauncherBlockEntity.syncLoadedMissile()` off an overridden `markDirty()` and **mirrored
-  onto both halves**, with `Block.NOTIFY_LISTENERS` — same hazard as the SAM site:
-  `onStateReplaced` here calls `ItemScatterer.spawn`, so a property-only change that read as a
-  replacement would dump the launcher's own inventory every time a missile was loaded or fired.
-  Block settings need `.nonOpaque()` now that the model isn't a full cube.
-  **Redstone is owned solely by the pad**: `neighborUpdate` on either half resolves to the lower
-  half, checks power at `lower` *and* `lower.up()`, and edges `POWERED` there — both halves
-  converging on one state is what stops a lever touching both from firing twice. Faces placer
-  like a dispenser, opens GUI on right-click, fires on redstone **rising edge** only
-  (`neighborUpdate`), drops its ammo item via `ItemScatterer` in `onStateReplaced`.
+- `block/MissileLauncherBlock.java` — `BlockWithEntity`, a **2×2 footprint, 3 blocks tall
+  multiblock**: twelve real block positions, all the same block, told apart by a
+  **`PART` `IntProperty` 0–11** (`part = y*4 + z*2 + x`, cells indexed in the structure's own
+  unrotated FACING=NORTH frame, front = −Z). `CORE_PART = 0` (bottom front-left) is the only
+  part with a block entity; the other eleven are visual. This replaced the old two-tall
+  `HALF=LOWER`/`UPPER` split entirely — there is no `DoubleBlockHalf` on this block any more,
+  and the item is a plain `BlockItem`, not `TallBlockItem`, because `onPlaced` writes the other
+  eleven parts itself.
+  **Why twelve blocks and not one block with a big model**: a vanilla block model may only use
+  element coordinates in `[-16, 32]` (three blocks on an axis, and only if centred on the middle
+  one), so a 2×2×3 structure simply cannot be one model. The geometry is authored once in
+  "structure space" (32×48×32 units) in `scratchpad/launcher.py` and **sliced into one model per
+  cell** by that script — regenerate it rather than hand-editing
+  `models/block/missile_launcher_p*.json`. The other option, one block plus a
+  `BlockEntityRenderer`, was rejected: custom geometry in this MC version goes through
+  `submitCustom(..., RenderLayers.debugQuads(), ...)`, which is untextured *and* unlit, so the
+  whole gantry would need hand-faked per-quad shading like `RadarDishBlockEntityRenderer`.
+  Slicing keeps normal block lighting, culling and textures.
+  **Rotation is the subtle part**: blockstate `y` rotation turns each part's *model*, and
+  `rotateCell` turns each part's *placement* by the matching amount — in the 32-unit structure
+  frame a `y: 90` maps `(x, z) -> (32 - z, x)`, which on cell indices reduces to
+  `(x, z) -> (1 - z, x)`. `offsetFromCore(part, facing)` composes those, `corePos(state, pos)`
+  inverts it. `launchAxis` derives the missile's standing axis (the corner shared by all four
+  footprint cells) from `offsetFromCore` rather than hard-coding it per facing, so the two can't
+  drift apart.
+  FACING + POWERED + **`LOADED`** (`IntProperty` 0–2: `LOAD_EMPTY`/`LOAD_STANDARD`/`LOAD_CRUISE`)
+  as before; **144 blockstate variants** (12 parts × 4 facings × 3 loads), 36 generated models.
+  `LOADED` is synced from `MissileLauncherBlockEntity.syncLoadedMissile()` off an overridden
+  `markDirty()` and **mirrored onto all twelve parts** (the missile crosses every cell), with
+  `Block.NOTIFY_LISTENERS` — same hazard as the SAM site: `onStateReplaced` here calls
+  `ItemScatterer.spawn`, so a property-only change that read as a replacement would dump the
+  launcher's own inventory every time a missile was loaded or fired.
+  **Placement/removal**: `getPlacementState` returns `null` unless all twelve cells are
+  replaceable (item never leaves the hand, same gate-don't-undo reasoning as
+  `ArmorZoneStorage.checkPlacement`); `canPlaceAt`/`getStateForNeighborUpdate` are *not*
+  overridden at all — instead `onStateReplaced` tears the whole structure down when any one part
+  goes, siblings removed via `setBlockState(..., SKIP_DROPS)` so only the part actually mined can
+  drop an item. A static `dismantling` flag guards that against recursing back through itself.
+  **Collision is a full cube on every part** — per-cell shapes would have to be rotated in Java
+  for all four facings (blockstate `y` rotates models, not `VoxelShape`s), which is a lot of
+  machinery for something that reads as a solid launch tower anyway.
+  **Redstone is owned solely by the core**: `neighborUpdate` on any part resolves to the core,
+  checks power at all twelve positions, and edges `POWERED` there — all parts converging on one
+  state is what stops a lever touching two of them from firing twice. Faces placer like a
+  dispenser, opens GUI on right-click from any part, fires on redstone **rising edge** only.
+  **Launchers saved before this change** (which had `half`, not `part`) read back as `part=0`
+  default-facing, i.e. a lone core block with only its own slice rendered — not a crash, but they
+  need breaking and re-placing.
 - `block/entity/MissileLauncherBlockEntity.java` — implements `Inventory` (2 slots:
   `MISSILE_SLOT = 0`, `USB_SLOT = 1`) + `ExtendedScreenHandlerFactory<LauncherScreenData>`.
   Holds `targetX/Y/Z` + `hasTarget`, plus its **own per-block** `List<Waypoint> waypoints`
@@ -528,10 +557,24 @@ Resources (`src/main/resources/`):
   flat `textures/item/icbm_missile.png` sprite is still used by `sam_ammo`/`ciws_ammo`.
   **`textures/item/missile_parts.png` is written to `textures/block/` as well, and that
   duplication is required**: Minecraft stitches item and block textures into separate atlases and
-  a *block* model may only reference block-atlas sprites. The launcher pad's models embed the
+  a *block* model may only reference block-atlas sprites. The launcher's models embed the
   missile geometry, and pointing them at `item/missile_parts` got them rejected outright
   (`"contains sprites from outside of supported atlas"`, plus `Unable to bake item model`) — a
-  failure that only shows up in the `runClient` log, never at build time. **CIWS and radar now have
+  failure that only shows up in the `runClient` log, never at build time.
+  **The launcher no longer uses `missile_parts` or the old `missile_launcher_pad/side/top/front`
+  sprites at all** — `scratchpad/launcher.py` generates its own `textures/block/
+  missile_launcher_v2.png` on the same 4×4/8px patch scheme, with a military palette (concrete,
+  olive drab, gunmetal, scorch black) plus two *patterned* patches rather than flat colors:
+  `HAZARD` (diagonal caution stripes, used on kerbs/rails) and `GRATE` (walkway cross-hatch, used
+  on deck and platform tops). The old `missile_launcher_*` PNGs are still referenced as
+  placeholders by the armored blocks/doors and the monitor, so don't delete them.
+  Two things `launcher.py`'s slicer does that hand-written JSON kept getting wrong: a box that
+  continues into the next cell **must not emit a face on the cut plane** (otherwise every cell
+  boundary pays for a pair of hidden coplanar quads), and every model sets
+  `"ambientocclusion": false` because thin plates and open railings go blotchy under smooth
+  lighting. The **item** model is the whole structure at `scale = 0.35`, which is what makes
+  48 units of height land inside vanilla's `[-16, 32]` element bounds.
+  **CIWS and radar now have
   real models + textures**, not placeholders: `models/block/ciws.json` is a 24-element Phalanx
   turret (pedestal, octagonal ammo drum, stepped white radome, forward 6-barrel Vulcan) on
   `textures/block/ciws.png`, and `models/block/radar_mk1.json` + `models/item/radar_mk1.json` are

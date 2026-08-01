@@ -30,6 +30,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import org.jetbrains.annotations.Nullable;
@@ -109,10 +110,19 @@ public class MissileLauncherBlockEntity extends BlockEntity
 			loaded = MissileLauncherBlock.LOAD_STANDARD;
 		}
 
-		// Mirrored onto the gantry too: the missile straddles both halves, so
-		// both models have to agree on what's loaded.
-		setLoaded(world, this.getPos(), loaded);
-		setLoaded(world, this.getPos().up(), loaded);
+		// Mirrored onto every part: the missile crosses all twelve cells, so all
+		// twelve models have to agree on what's loaded.
+		BlockState coreState = world.getBlockState(this.getPos());
+		if (!(coreState.getBlock() instanceof MissileLauncherBlock)
+				|| !coreState.contains(MissileLauncherBlock.FACING)) {
+			return;
+		}
+		Direction structureFacing = coreState.get(MissileLauncherBlock.FACING);
+		for (int part = 0; part < MissileLauncherBlock.PART_COUNT; part++) {
+			setLoaded(world,
+					this.getPos().add(MissileLauncherBlock.offsetFromCore(part, structureFacing)),
+					loaded);
+		}
 	}
 
 	private static void setLoaded(World world, BlockPos pos, int loaded) {
@@ -150,15 +160,18 @@ public class MissileLauncherBlockEntity extends BlockEntity
 		}
 
 		BlockPos pos = this.getPos();
-		double spawnX = pos.getX() + 0.5;
-		// Clear of the gantry: the launcher is two blocks tall now, and the
-		// missile stands most of the way up it.
-		double spawnY = pos.getY() + 2.4;
-		double spawnZ = pos.getZ() + 0.5;
-
 		Direction facing = this.getCachedState().contains(MissileLauncherBlock.FACING)
 				? this.getCachedState().get(MissileLauncherBlock.FACING)
 				: Direction.NORTH;
+
+		// The missile stands on the axis shared by all four footprint cells,
+		// not over the core block itself - the core is only one corner of the
+		// 2x2 pad. Spawn near the top of the three-block gantry so the entity
+		// isn't born inside the tower.
+		Vec3d axis = MissileLauncherBlock.launchAxis(pos, facing);
+		double spawnX = axis.x;
+		double spawnY = pos.getY() + 2.8;
+		double spawnZ = axis.z;
 
 		MissileEntity missile = new MissileEntity(ModEntities.MISSILE, serverWorld);
 		missile.refreshPositionAndAngles(spawnX, spawnY, spawnZ, facing.getPositiveHorizontalDegrees(), 0.0f);
