@@ -3,6 +3,12 @@ Make the missiles have more of an arc rather than a straight calculation of cord
 Remodel the signal wire to a simple wire block
 The cruise missile model does not display once placed or launched
 
+Once a code is entered on a armored door make sure the door remembers the user and they
+don't have to enter it everytime. If they want to reset the code of the door there is a button only the
+owner can do once they have created a code
+
+Make an armored block breaker tool, only the person who placed the armored block can break it
+
 Make it so missiles shot from launchers appear as red on radar and sam missiles show as green
 
 Make the SAM Site be able to shoot at multiple targets but has a shooting delay of say 0.5 seconds but a full reload time once the chamber empties its 6 shells out of the chamber it takes like 3.5 seconds to reload
