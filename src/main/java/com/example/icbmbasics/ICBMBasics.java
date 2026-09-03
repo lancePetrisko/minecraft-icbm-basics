@@ -17,6 +17,7 @@ import com.example.icbmbasics.network.RadarUpdatePayload;
 import com.example.icbmbasics.network.SaveDriveWaypointPayload;
 import com.example.icbmbasics.network.SaveLauncherWaypointPayload;
 import com.example.icbmbasics.network.SetTargetPayload;
+import com.example.icbmbasics.network.ResetDoorCodePayload;
 import com.example.icbmbasics.network.SubmitDoorCodePayload;
 import com.example.icbmbasics.network.TriggerDetonatorPayload;
 import com.example.icbmbasics.network.Waypoint;
@@ -185,18 +186,39 @@ public class ICBMBasics implements ModInitializer {
 			}
 
 			if (!door.isCodeSet()) {
-				door.setCode(payload.code());
+				door.setCode(payload.code(), player.getUuid());
 				player.sendMessage(Text.translatable("gui.icbmbasics.code_set"), true);
 				return;
 			}
 
-			if (door.checkCode(payload.code())) {
+			if (door.checkCode(payload.code(), player.getUuid())) {
 				BlockState state = world.getBlockState(payload.pos());
 				if (state.getBlock() instanceof DoorBlock doorBlock) {
 					doorBlock.setOpen(player, world, state, payload.pos(), !state.get(DoorBlock.OPEN));
 				}
 			} else {
 				player.sendMessage(Text.translatable("gui.icbmbasics.wrong_code"), true);
+			}
+		});
+
+		// C2S payload: an armored door's keypad Reset button (owner-only,
+		// reached by sneak-clicking a door the player is already authorized on).
+		PayloadTypeRegistry.playC2S().register(ResetDoorCodePayload.ID, ResetDoorCodePayload.CODEC);
+
+		ServerPlayNetworking.registerGlobalReceiver(ResetDoorCodePayload.ID, (payload, context) -> {
+			ServerPlayerEntity player = context.player();
+			if (!(player.getEntityWorld() instanceof ServerWorld world)) {
+				return;
+			}
+			if (!player.getBlockPos().isWithinDistance(payload.pos(), 8.0)) {
+				return;
+			}
+			if (!(world.getBlockEntity(payload.pos()) instanceof ArmoredDoorBlockEntity door)) {
+				return;
+			}
+
+			if (door.resetCode(player.getUuid())) {
+				player.sendMessage(Text.translatable("gui.icbmbasics.code_reset"), true);
 			}
 		});
 

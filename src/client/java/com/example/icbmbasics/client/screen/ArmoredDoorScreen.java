@@ -1,5 +1,6 @@
 package com.example.icbmbasics.client.screen;
 
+import com.example.icbmbasics.network.ResetDoorCodePayload;
 import com.example.icbmbasics.network.SubmitDoorCodePayload;
 import com.example.icbmbasics.screen.ArmoredDoorScreenHandler;
 
@@ -15,6 +16,13 @@ import net.minecraft.text.Text;
  * typed so far. Shows "set a code" or "enter code" copy depending on whether
  * the door already has one. Purely a front end - submitting always closes
  * the screen and lets the server validate/react.
+ *
+ * <p>A player the server already remembers as authorized never sees this
+ * keypad in the first place on a plain click (the door just opens - see
+ * {@code ArmoredDoorBlock#onUse}); they only land here by sneak-clicking,
+ * which is the sole way an owner can reach the Reset button. In that case
+ * this shows a simple status panel instead of the digit grid - there's
+ * nothing to enter.
  */
 public class ArmoredDoorScreen extends HandledScreen<ArmoredDoorScreenHandler> {
 	private static final int PANEL_COLOR = 0xFFC6C6C6;
@@ -28,14 +36,17 @@ public class ArmoredDoorScreen extends HandledScreen<ArmoredDoorScreenHandler> {
 	private static final int BUTTON_SIZE = 20;
 	private static final int BUTTON_GAP = 4;
 	private static final int PAD_COLS = 3;
+	private static final int PAD_WIDTH = PAD_COLS * (BUTTON_SIZE + BUTTON_GAP) + BUTTON_GAP;
 
 	private StringBuilder entered = new StringBuilder();
 	private Text status = Text.empty();
 
 	public ArmoredDoorScreen(ArmoredDoorScreenHandler handler, PlayerInventory inventory, Text title) {
 		super(handler, inventory, title);
-		this.backgroundWidth = PAD_COLS * (BUTTON_SIZE + BUTTON_GAP) + BUTTON_GAP;
-		this.backgroundHeight = PAD_TOP + 4 * (BUTTON_SIZE + BUTTON_GAP) + 10;
+		this.backgroundWidth = PAD_WIDTH;
+		this.backgroundHeight = handler.isAuthorized()
+				? PAD_TOP + (handler.isOwner() ? (BUTTON_SIZE + BUTTON_GAP) : 0) + 10
+				: PAD_TOP + 4 * (BUTTON_SIZE + BUTTON_GAP) + 10;
 	}
 
 	@Override
@@ -43,6 +54,18 @@ public class ArmoredDoorScreen extends HandledScreen<ArmoredDoorScreenHandler> {
 		super.init();
 		int left = this.x;
 		int top = this.y + PAD_TOP;
+
+		if (this.handler.isAuthorized()) {
+			// Already-authorized players only reach this screen by sneak-clicking
+			// (see ArmoredDoorBlock#onUse) - there's no code to enter, just the
+			// owner-only reset button, if this viewer is in fact the owner.
+			if (this.handler.isOwner()) {
+				this.addDrawableChild(ButtonWidget.builder(Text.translatable("gui.icbmbasics.reset_code"), button -> this.resetCode())
+						.dimensions(left + BUTTON_GAP, top, PAD_WIDTH - 2 * BUTTON_GAP, BUTTON_SIZE)
+						.build());
+			}
+			return;
+		}
 
 		// 1-9 in a 3x3 grid, then Clear / 0 / Submit on the last row.
 		for (int digit = 1; digit <= 9; digit++) {
@@ -88,6 +111,11 @@ public class ArmoredDoorScreen extends HandledScreen<ArmoredDoorScreenHandler> {
 		this.close();
 	}
 
+	private void resetCode() {
+		ClientPlayNetworking.send(new ResetDoorCodePayload(this.handler.getDoorPos()));
+		this.close();
+	}
+
 	@Override
 	protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
 		int left = this.x;
@@ -103,6 +131,14 @@ public class ArmoredDoorScreen extends HandledScreen<ArmoredDoorScreenHandler> {
 
 	@Override
 	protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+		if (this.handler.isAuthorized()) {
+			Text mode = this.handler.isOwner()
+					? Text.translatable("gui.icbmbasics.owner_authorized")
+					: Text.translatable("gui.icbmbasics.authorized");
+			context.drawText(this.textRenderer, mode, 6, 6, LABEL_COLOR, false);
+			return;
+		}
+
 		Text mode = this.handler.isCodeSet()
 				? Text.translatable("gui.icbmbasics.enter_code")
 				: Text.translatable("gui.icbmbasics.set_code");

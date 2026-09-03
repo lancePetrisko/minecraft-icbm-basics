@@ -92,7 +92,15 @@ public class ArmoredDoorBlock extends DoorBlock implements BlockEntityProvider {
 		}
 		BlockPos lowerPos = state.get(HALF) == DoubleBlockHalf.LOWER ? pos : pos.down();
 		if (world.getBlockEntity(lowerPos) instanceof ArmoredDoorBlockEntity doorEntity) {
-			player.openHandledScreen(doorEntity);
+			// A player who already proved the code (or set it) opens straight away;
+			// sneaking always brings up the keypad instead, since that's otherwise the
+			// only way an already-authorized owner could ever reach the reset button.
+			if (!player.isSneaking() && doorEntity.isAuthorized(player.getUuid())) {
+				BlockState lowerState = pos.equals(lowerPos) ? state : world.getBlockState(lowerPos);
+				this.setOpen(player, world, lowerState, lowerPos, !lowerState.get(OPEN));
+			} else {
+				player.openHandledScreen(doorEntity);
+			}
 		}
 		return ActionResult.SUCCESS;
 	}
