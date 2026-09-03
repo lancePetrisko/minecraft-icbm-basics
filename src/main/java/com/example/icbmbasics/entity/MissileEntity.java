@@ -13,6 +13,8 @@ import net.minecraft.entity.FlyingItemEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ChunkTicketType;
@@ -56,7 +58,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	/** Blocks tougher than this survive the extra crater carving (obsidian etc.). */
 	private static final float MAX_CARVED_BLAST_RESISTANCE = 100.0f;
 	/**
-	 * Terrain-hugging cruise (cruise missiles only - see {@link #cruiseMissile}):
+	 * Terrain-hugging cruise (cruise missiles only - see {@link #CRUISE_MISSILE}):
 	 * instead of leveling off at whatever altitude boost happened to reach, the
 	 * missile steers toward this height above whatever's directly below it,
 	 * re-sampled every tick. Currently a purely cosmetic "flies low" look for
@@ -131,8 +133,17 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	 * ({@code ICBM_MISSILE} vs {@code CRUISE_MISSILE}) - gates terrain-hugging
 	 * cruise, the SAM-evasion juke, and the smaller radar cross-section. A
 	 * standard missile gets none of these.
+	 *
+	 * <p>Backed by {@link DataTracker} (not a plain field) because
+	 * {@link #getStack()} - which picks the rendered item/model - is called
+	 * client-side by {@code MissileEntityRenderer}. A plain field only ever
+	 * gets set server-side (from the launcher) or via NBT on a save/load
+	 * round-trip; a freshly spawned missile's client-side instance never
+	 * receives either, so it always read as {@code false} there and rendered
+	 * as a standard missile even when launched as a cruise missile.
 	 */
-	private boolean cruiseMissile;
+	private static final TrackedData<Boolean> CRUISE_MISSILE =
+			DataTracker.registerData(MissileEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
 	public MissileEntity(EntityType<? extends MissileEntity> type, World world) {
 		super(type, world);
@@ -198,21 +209,21 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	}
 
 	public void setCruiseMissile(boolean cruiseMissile) {
-		this.cruiseMissile = cruiseMissile;
+		this.dataTracker.set(CRUISE_MISSILE, cruiseMissile);
 	}
 
 	public boolean isCruiseMissile() {
-		return this.cruiseMissile;
+		return this.dataTracker.get(CRUISE_MISSILE);
 	}
 
 	/** How much smaller this missile's effective detection radius is against radar/SAM/CIWS - 1.0 for a standard missile. */
 	public double getRadarCrossSectionMultiplier() {
-		return this.cruiseMissile ? RADAR_CROSS_SECTION_MULTIPLIER : 1.0;
+		return this.isCruiseMissile() ? RADAR_CROSS_SECTION_MULTIPLIER : 1.0;
 	}
 
 	@Override
 	protected void initDataTracker(DataTracker.Builder builder) {
-		// No synced data needed; position/velocity use vanilla entity tracking.
+		builder.add(CRUISE_MISSILE, false);
 	}
 
 	@Override
@@ -246,7 +257,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		}
 
 		this.updateVelocity();
-		if (this.cruiseMissile && !this.hasJuked) {
+		if (this.isCruiseMissile() && !this.hasJuked) {
 			this.checkSamEvasion(serverWorld);
 		}
 		this.updateRotation();
@@ -328,7 +339,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 			// missile arrives at (targetX, targetY, targetZ) in a smooth arc.
 			double dy = this.targetY - this.getY();
 			vy = MathHelper.clamp(speed * dy / horizontalDistance * 1.5, -speed * 2.0, speed);
-		} else if (this.cruiseMissile) {
+		} else if (this.isCruiseMissile()) {
 			// Cruise phase (cruise missiles only): terrain-hugging - steer toward
 			// a fixed height above whatever's directly below right now, rather
 			// than just leveling off at whatever altitude boost reached.
@@ -551,7 +562,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 
 	@Override
 	public ItemStack getStack() {
-		return new ItemStack(this.cruiseMissile ? ModItems.CRUISE_MISSILE : ModItems.ICBM_MISSILE);
+		return new ItemStack(this.isCruiseMissile() ? ModItems.CRUISE_MISSILE : ModItems.ICBM_MISSILE);
 	}
 
 	@Override
@@ -562,7 +573,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		view.putBoolean("HasTarget", this.hasTarget);
 		view.putInt("FlightAge", this.age);
 		view.putBoolean("HasJuked", this.hasJuked);
-		view.putBoolean("CruiseMissile", this.cruiseMissile);
+		view.putBoolean("CruiseMissile", this.isCruiseMissile());
 		view.putBoolean("LaunchCaptured", this.launchCaptured);
 		view.putDouble("LaunchX", this.launchX);
 		view.putDouble("LaunchY", this.launchY);
@@ -578,7 +589,7 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		this.hasTarget = view.getBoolean("HasTarget", false);
 		this.age = view.getInt("FlightAge", 0);
 		this.hasJuked = view.getBoolean("HasJuked", false);
-		this.cruiseMissile = view.getBoolean("CruiseMissile", false);
+		this.setCruiseMissile(view.getBoolean("CruiseMissile", false));
 		this.launchCaptured = view.getBoolean("LaunchCaptured", false);
 		this.launchX = view.getDouble("LaunchX", 0.0);
 		this.launchY = view.getDouble("LaunchY", 0.0);
