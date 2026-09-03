@@ -1,5 +1,8 @@
-Remodel the Missile and Cruise Missile
-Remodel the Missile Launcher to be more like a platform with gaurd rails and once a missile is
-loaded it displays the missile on the launcher platform
+Make the missiles fly a little faster
+Make the missiles have more of an arc rather than a straight calculation of cordinates
+Remodel the signal wire to a simple wire block
+The cruise missile model does not display once placed or launched
+
+Make it so missiles shot from launchers appear as red on radar and sam missiles show as green
 
 Make the SAM Site be able to shoot at multiple targets but has a shooting delay of say 0.5 seconds but a full reload time once the chamber empties its 6 shells out of the chamber it takes like 3.5 seconds to reload

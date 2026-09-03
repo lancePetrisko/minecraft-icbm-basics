@@ -1,0 +1,39 @@
+{
+  "stats": {
+    "minecraft:dropped": {
+      "icbmbasics:cruise_missile": 4,
+      "icbmbasics:icbm_missile": 2
+    },
+    "minecraft:used": {
+      "icbmbasics:armored_door_mk3": 1,
+      "minecraft:lever": 1,
+      "icbmbasics:ciws": 1,
+      "icbmbasics:armor_tool": 1,
+      "icbmbasics:sam_site": 5
+    },
+    "minecraft:custom": {
+      "minecraft:time_since_rest": 9722,
+      "minecraft:walk_one_cm": 30428,
+      "minecraft:leave_game": 1,
+      "minecraft:play_time": 9722,
+      "minecraft:jump": 59,
+      "minecraft:time_since_death": 9722,
+      "minecraft:drop": 6,
+      "minecraft:sprint_one_cm": 3646,
+      "minecraft:open_chest": 1,
+      "minecraft:total_world_time": 12352,
+      "minecraft:fly_one_cm": 52255,
+      "minecraft:walk_on_water_one_cm": 540,
+      "minecraft:crouch_one_cm": 1613,
+      "minecraft:sneak_time": 754
+    },
+    "minecraft:picked_up": {
+      "icbmbasics:usb_drive": 1,
+      "icbmbasics:cruise_missile": 4,
+      "minecraft:cobblestone": 4,
+      "minecraft:sand": 2,
+      "icbmbasics:icbm_missile": 3
+    }
+  },
+  "DataVersion": 4671
+}
