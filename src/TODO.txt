@@ -1,4 +1,3 @@
-Make the missiles fly a little faster
 Remodel the signal wire to a simple wire block
 The cruise missile model does not display once placed or launched
 
