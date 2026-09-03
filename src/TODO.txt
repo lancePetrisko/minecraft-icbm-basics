@@ -2,9 +2,14 @@ Make the missiles fly a little faster
 Remodel the signal wire to a simple wire block
 The cruise missile model does not display once placed or launched
 
+1 Missiles explosion causes one nearby to explode disable that
+
 Once a code is entered on a armored door make sure the door remembers the user and they
 don't have to enter it everytime. If they want to reset the code of the door there is a button only the
 owner can do once they have created a code
+
+Include a randomness to the missile accuracy. Sometimes it will hit within 10-5 blocks and different
+tiers of missiles
 
 Make an armored block breaker tool, only the person who placed the armored block can break it
 

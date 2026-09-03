@@ -32,7 +32,7 @@ public class ICBMConfig {
 	public boolean terrainDestruction = true;
 
 	/** Horizontal cruise speed of the missile in blocks per tick. */
-	public double missileSpeed = 1.1;
+	public double missileSpeed = 2.5;
 
 	/**
 	 * Detection radius (blocks) per radar tier, index 0 = tier 1. Each tier is
