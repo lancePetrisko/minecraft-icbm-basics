@@ -77,6 +77,20 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	/** How much smaller a cruise missile's effective radar/SAM/CIWS detection radius is, vs. a standard missile's 1.0. */
 	private static final double RADAR_CROSS_SECTION_MULTIPLIER = 0.55;
 	/**
+	 * Standard-missile lofted arc (see the cruise-phase {@code else} branch of
+	 * {@link #updateVelocity()}): apex height above the launch/target baseline,
+	 * as a fraction of the total launch-&gt;target horizontal distance, clamped
+	 * to [{@link #MIN_ARC_HEIGHT}, {@link #MAX_ARC_HEIGHT}] so short hops still
+	 * visibly arc and very long shots don't loft absurdly high.
+	 */
+	private static final double ARC_HEIGHT_FRACTION = 0.35;
+	private static final double MIN_ARC_HEIGHT = 14.0;
+	private static final double MAX_ARC_HEIGHT = 90.0;
+	/** How eagerly vertical speed corrects toward the arc's desired altitude each tick. */
+	private static final double ARC_CLIMB_GAIN = 0.10;
+	/** Vertical speed cap while following the arc, as a multiplier of {@code missileSpeed}. */
+	private static final double ARC_MAX_CLIMB_MULTIPLIER = 1.6;
+	/**
 	 * Chunk-ticket radius (in chunks) kept loaded around the missile so it keeps
 	 * ticking far from any player. Uses vanilla's {@code ENDER_PEARL} ticket type:
 	 * FOR_SIMULATION (entities actually tick, not just chunk-loaded) with a
@@ -104,6 +118,14 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	private boolean registeredActive;
 	/** Whether this missile has already spent its one-time SAM-evasion juke. */
 	private boolean hasJuked;
+	/** Whether {@link #launchX}/{@link #launchY}/{@link #launchZ}/{@link #launchHorizontalDistance} have been captured yet. */
+	private boolean launchCaptured;
+	/** Position captured on this missile's first {@link #updateVelocity()} call - the arc's start point. */
+	private double launchX;
+	private double launchY;
+	private double launchZ;
+	/** Total launch-&gt;target horizontal distance, captured once. Denominator for the standard-missile arc's progress fraction; floored at 1.0 to avoid division by zero. */
+	private double launchHorizontalDistance = 1.0;
 	/**
 	 * Set by the launcher at spawn time based on which item was consumed
 	 * ({@code ICBM_MISSILE} vs {@code CRUISE_MISSILE}) - gates terrain-hugging
@@ -278,6 +300,10 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 	private void updateVelocity() {
 		double speed = ICBMBasics.CONFIG.missileSpeed;
 
+		if (!this.launchCaptured) {
+			this.captureLaunch();
+		}
+
 		if (this.age < BOOST_TICKS) {
 			this.setVelocity(0.0, BOOST_SPEED, 0.0);
 			return;
@@ -311,11 +337,33 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 			double desiredY = groundY + CRUISE_HEIGHT_ABOVE_GROUND;
 			vy = MathHelper.clamp((desiredY - this.getY()) * CRUISE_TERRAIN_GAIN, -speed, speed);
 		} else {
-			// Cruise phase (standard missile): gently settle onto a flat trajectory.
-			vy = this.getVelocity().y * 0.85;
+			// Cruise phase (standard missile): follow a lofted parabolic arc from
+			// launch to target rather than just leveling off wherever boost left
+			// it. Recomputed from the *current* position every tick - "progress"
+			// is how far along the launch->target horizontal line the missile
+			// currently is - so this stays a guided weapon that self-corrects
+			// (e.g. after drifting off-line) instead of flying a rigid pre-baked
+			// curve.
+			double progress = MathHelper.clamp(1.0 - horizontalDistance / this.launchHorizontalDistance, 0.0, 1.0);
+			double apexHeight = MathHelper.clamp(this.launchHorizontalDistance * ARC_HEIGHT_FRACTION, MIN_ARC_HEIGHT, MAX_ARC_HEIGHT);
+			double baseline = this.launchY + (this.targetY - this.launchY) * progress;
+			double arcOffset = 4.0 * apexHeight * progress * (1.0 - progress);
+			double desiredY = baseline + arcOffset;
+			vy = MathHelper.clamp((desiredY - this.getY()) * ARC_CLIMB_GAIN, -speed * ARC_MAX_CLIMB_MULTIPLIER, speed * ARC_MAX_CLIMB_MULTIPLIER);
 		}
 
 		this.setVelocity(dx * speed, vy, dz * speed);
+	}
+
+	/** Captures launch position and total launch-&gt;target horizontal distance, once, lazily on first {@link #updateVelocity()}. */
+	private void captureLaunch() {
+		this.launchX = this.getX();
+		this.launchY = this.getY();
+		this.launchZ = this.getZ();
+		double dx = this.targetX - this.launchX;
+		double dz = this.targetZ - this.launchZ;
+		this.launchHorizontalDistance = Math.max(1.0, Math.sqrt(dx * dx + dz * dz));
+		this.launchCaptured = true;
 	}
 
 	/**
@@ -515,6 +563,11 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		view.putInt("FlightAge", this.age);
 		view.putBoolean("HasJuked", this.hasJuked);
 		view.putBoolean("CruiseMissile", this.cruiseMissile);
+		view.putBoolean("LaunchCaptured", this.launchCaptured);
+		view.putDouble("LaunchX", this.launchX);
+		view.putDouble("LaunchY", this.launchY);
+		view.putDouble("LaunchZ", this.launchZ);
+		view.putDouble("LaunchHorizontalDistance", this.launchHorizontalDistance);
 	}
 
 	@Override
@@ -526,5 +579,10 @@ public class MissileEntity extends Entity implements FlyingItemEntity {
 		this.age = view.getInt("FlightAge", 0);
 		this.hasJuked = view.getBoolean("HasJuked", false);
 		this.cruiseMissile = view.getBoolean("CruiseMissile", false);
+		this.launchCaptured = view.getBoolean("LaunchCaptured", false);
+		this.launchX = view.getDouble("LaunchX", 0.0);
+		this.launchY = view.getDouble("LaunchY", 0.0);
+		this.launchZ = view.getDouble("LaunchZ", 0.0);
+		this.launchHorizontalDistance = view.getDouble("LaunchHorizontalDistance", 1.0);
 	}
 }

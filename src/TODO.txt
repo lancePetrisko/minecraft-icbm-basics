@@ -1,5 +1,4 @@
 Make the missiles fly a little faster
-Make the missiles have more of an arc rather than a straight calculation of cordinates
 Remodel the signal wire to a simple wire block
 The cruise missile model does not display once placed or launched
 
